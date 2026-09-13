@@ -1,0 +1,99 @@
+<header class="top">
+  <button class="tbtn iconb pro-only frow" id="railToggle" aria-label="파라미터 패널 접기" style="display:none">
+    <svg viewBox="0 0 20 20"><path d="M3 5h14M3 10h14M3 15h14"/></svg></button>
+  <div class="brand"><b>롤모델</b><span>ROLLMODEL · 캐스터 접촉 · 발열 해석</span></div>
+  <div class="modesw" role="group" aria-label="표시 모드">
+    <button id="mEasy" aria-pressed="true">간단</button>
+    <button id="mPro"  aria-pressed="false">상세</button>
+  </div>
+  <select id="scen" aria-label="시나리오"></select>
+  <span class="sp"></span>
+  <button class="tbtn" id="btnExpand">근거 모두 열기</button>
+  <button class="tbtn" id="btnJson" data-save>설정 저장</button>
+  <button class="tbtn" id="btnImp">불러오기</button>
+  <input type="file" id="fileImp" accept=".json" hidden>
+  <button class="tbtn iconb" id="btnTheme" aria-label="라이트/다크 전환">
+    <svg viewBox="0 0 20 20"><circle cx="10" cy="10" r="4"/><path d="M10 1.6v2M10 16.4v2M18.4 10h-2M3.6 10h-2M15.9 4.1l-1.4 1.4M5.5 14.5l-1.4 1.4M15.9 15.9l-1.4-1.4M5.5 5.5L4.1 4.1"/></svg></button>
+</header>
+
+<div class="wrap">
+<aside class="rail" id="rail"><div class="rail-in" id="railIn"></div></aside>
+
+<main class="main">
+  <section class="strip" id="strip"></section>
+  <section class="card hero-fig" id="heroCard">
+    <div class="card-h"><b>접촉 단면</b><span id="figTag"></span><span class="sp"></span>
+      <span class="hint" id="rollNote"></span>
+      <button class="tbtn" id="btnSvg" data-save>도면 저장</button></div>
+    <div class="fig" id="figSection"></div>
+    <div class="legend" id="figLegend"></div>
+  </section>
+  <section class="card" id="planCard">
+    <div class="card-h"><b>접촉 자국 · 단부 집중</b><span id="planTag"></span></div>
+    <div class="fig" id="figPlan"></div>
+    <div class="legend" id="planLegend"></div>
+  </section>
+  <section class="verdict" id="verdict" data-s="ok"></section>
+  <div id="alerts" style="display:flex;flex-direction:column;gap:10px"></div>
+  <nav class="tabs pro-only frow" id="tabs" role="tablist" style="display:none"></nav>
+
+  <section id="viewChain" style="display:flex;flex-direction:column;gap:16px">
+    <div class="card" id="fixCard" hidden>
+      <div class="card-h"><b>불가 판정을 해소하려면</b><span id="fixTag"></span></div>
+      <div class="card-b"><div class="fixes" id="fixes"></div>
+        <p class="hint" style="margin-top:9px">단일 변수 제안은 <b>그 값 하나만</b> 바꿔 스캔 범위에서 찾은 개선값입니다. 치수 동시 확대는 표시된 치수를 함께 바꿉니다. 주의 판정이 남을 수 있습니다.</p></div>
+    </div>
+    <section class="ladder" id="ladder"></section>
+    <div class="two pro-only" style="display:none">
+      <div class="card"><div class="card-h"><b>깊이 방향 응력</b><span>τ(z) · σ_z(z)</span></div>
+        <div class="fig" id="figDepth"></div><div class="legend" id="depthLegend"></div></div>
+      <div class="card"><div class="card-h"><b>표면 응력 분포</b><span>σ_x(x) · 후단 인장</span></div>
+        <div class="fig" id="figSurf"></div><div class="legend" id="surfLegend"></div></div>
+    </div>
+    <div class="two">
+      <div class="card"><div class="card-h"><b>하중 산출</b><span id="loadTag"></span></div>
+        <div class="card-b"><div class="chainlist" id="loadChainList"></div></div></div>
+      <div class="card"><div class="card-h"><b>주요 산출값</b><span id="resTag"></span></div>
+        <div class="card-b flush"><div class="stats" id="results"></div></div></div>
+    </div>
+  </section>
+
+  <section id="viewThermal" style="display:none;flex-direction:column;gap:16px">
+    <div class="card"><div class="card-h"><b>속도–하중 열 한계선</b><span id="thTag"></span></div>
+      <div class="fig" id="figThermal"></div><div class="legend" id="thermalLegend"></div></div>
+    <div class="two">
+      <div class="card"><div class="card-h"><b>발열 수지</b><span>정상상태</span></div>
+        <div class="card-b flush"><div class="stats" id="thStats"></div></div></div>
+      <div class="card"><div class="card-h"><b>제조사 정격 캘리브레이션</b><span id="calTag"></span></div>
+        <div class="card-b" id="calBody"></div></div>
+    </div>
+  </section>
+
+  <section id="viewMatrix" style="display:none;flex-direction:column;gap:16px">
+    <div class="card"><div class="card-h"><b>바퀴 × 바닥 조합</b><span id="mxTag"></span><span class="sp"></span>
+        <button class="tbtn" id="btnCsv" data-save>CSV 저장</button></div>
+      <div class="scrollx"><table class="tbl mx" id="mx"></table></div>
+      <div class="legend">
+        <span><i style="background:var(--ok-bg);box-shadow:inset 0 0 0 1px var(--ok)"></i>가능 — 전 항목 허용치 이내</span>
+        <span><i style="background:var(--warn-bg);box-shadow:inset 0 0 0 1px var(--warn)"></i>주의 — 적용한계 근접 또는 여유 부족</span>
+        <span><i style="background:var(--bad-bg);box-shadow:inset 0 0 0 1px var(--bad)"></i>불가 — 허용치 초과 또는 이론 적용 불가</span>
+        <span>셀을 누르면 그 조합으로 전환합니다</span></div></div>
+  </section>
+
+  <section id="viewReverse" style="display:none;flex-direction:column;gap:16px">
+    <div class="card"><div class="card-h"><b>필요 치수 영역</b><span id="rvTag"></span></div>
+      <div class="fig" id="figReverse"></div><div class="legend" id="revLegend"></div></div>
+  </section>
+
+  <section id="viewSources" style="display:none;flex-direction:column;gap:16px">
+    <div class="callout" data-s="info"><div><b>이 해석기가 무엇에 기대고 있는가</b>
+      아래는 계산에 쓰인 모든 식과 그 출처입니다. 신뢰도 등급이 <b>경험식</b>·<b>참고값</b>인 항목은 사용자가 직접 조정해야 하는 값이며, 기본값은 통상 범위의 대푯값일 뿐입니다.</div></div>
+    <div class="card"><div class="card-h"><b>신뢰도 등급</b></div>
+      <div class="card-b flush"><div class="stats" id="confList"></div></div></div>
+    <div class="card"><div class="card-h"><b>식 · 출처 대장</b></div>
+      <div class="scrollx"><table class="tbl" id="srcTable"></table></div></div>
+    <div class="card"><div class="card-h"><b>이 해석기가 다루지 않는 것</b></div>
+      <div class="card-b" id="limits"></div></div>
+  </section>
+</main>
+</div>

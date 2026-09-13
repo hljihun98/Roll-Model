@@ -1,0 +1,384 @@
+<title>롤모델 개발 총정리</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@500;600&display=swap">
+<style>
+:root{
+  --bg:#FBFCFD; --surface:#FFFFFF; --surface2:#F4F7F9; --sunk:#F8FAFC;
+  --ink:#0B1418; --ink2:#4A5A66; --ink3:#6E7C87;
+  --line:#E5EAEF; --line2:#CDD7DF;
+  --accent:#14527D; --accent-soft:#EAF2F9;
+  --ok:#1C6845;  --ok-bg:#EDF7F1;  --ok-line:#B4D9C4;
+  --warn:#8A5606;--warn-bg:#FCF4E4;--warn-line:#E8CE9B;
+  --bad:#9E2A21; --bad-bg:#FDEFED; --bad-line:#EEBCB5;
+  --sans:'IBM Plex Sans KR',system-ui,-apple-system,'Malgun Gothic',sans-serif;
+  --cond:'IBM Plex Sans Condensed','IBM Plex Sans KR',system-ui,sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,'SFMono-Regular',Menlo,monospace;
+}
+:root[data-theme="dark"]{
+  --bg:#090D10; --surface:#111A1F; --surface2:#18232A; --sunk:#0E161B;
+  --ink:#E3EAEF; --ink2:#9AABB6; --ink3:#687985;
+  --line:#233039; --line2:#31424D;
+  --accent:#79AFD9; --accent-soft:#132836;
+  --ok:#4FAE81;  --ok-bg:#0F2620;  --ok-line:#245743;
+  --warn:#D69C42;--warn-bg:#2A2211;--warn-line:#5C4720;
+  --bad:#E27B70; --bad-bg:#2C1512; --bad-line:#6A2A24;
+}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);
+  font-size:14.5px;line-height:1.68;-webkit-font-smoothing:antialiased}
+h1,h2,h3,p,ul,ol,table{margin:0}
+.n{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.wrap{max-width:1000px;margin:0 auto;padding:0 20px 80px}
+@media(prefers-reduced-motion:reduce){*{transition-duration:1ms!important}}
+
+/* 표제 */
+.mast{border-bottom:1px solid var(--line);padding-block:34px 22px;margin-bottom:26px}
+.eyebrow{font-family:var(--cond);font-size:11.5px;font-weight:600;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--ink3)}
+.mast h1{font-size:32px;font-weight:600;letter-spacing:-.028em;line-height:1.18;
+  margin-top:7px;text-wrap:balance}
+.mast .sub{font-size:15px;color:var(--ink2);margin-top:9px;max-width:66ch}
+.meta{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:15px;font-family:var(--mono);
+  font-size:11.5px;color:var(--ink3)}
+
+/* 핵심 수치 */
+.tiles{display:flex;flex-wrap:wrap;gap:1px;background:var(--line);border:1px solid var(--line);
+  border-radius:6px;overflow:hidden;margin-bottom:30px}
+.tile{flex:1 1 168px;background:var(--surface);padding:13px 16px;min-width:0}
+.tile .k{font-size:11px;color:var(--ink3);display:block}
+.tile .v{font-family:var(--mono);font-size:25px;font-weight:600;letter-spacing:-.035em;
+  line-height:1.15;display:block;margin-top:2px}
+.tile .v u{text-decoration:none;font-size:.5em;color:var(--ink3);margin-left:3px;font-weight:400}
+.tile .d{font-size:11px;color:var(--ink3);display:block;margin-top:3px;line-height:1.45}
+.tile.good .v{color:var(--ok)}
+
+/* 섹션 */
+section{margin-bottom:38px;scroll-margin-top:20px}
+h2{font-size:20px;font-weight:600;letter-spacing:-.02em;display:flex;align-items:baseline;gap:11px;
+  padding-bottom:9px;border-bottom:1.5px solid var(--ink);margin-bottom:16px}
+h2 .no{font-family:var(--mono);font-size:12.5px;color:var(--accent);font-weight:500;
+  border:1px solid var(--accent);border-radius:3px;padding:1px 6px;flex:0 0 auto}
+h2 .tail{margin-left:auto;font-family:var(--mono);font-size:11.5px;color:var(--ink3);font-weight:400}
+h3{font-size:15px;font-weight:600;margin:20px 0 8px}
+p{max-width:74ch;margin-bottom:11px}
+p.lead{color:var(--ink2)}
+code{font-family:var(--mono);font-size:.9em;background:var(--surface2);padding:1px 5px;border-radius:3px}
+
+/* 표 */
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:6px;background:var(--surface)}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{font-family:var(--cond);font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--ink3);text-align:left;background:var(--surface2);padding:9px 13px;
+  border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:10px 13px;border-bottom:1px solid var(--line);vertical-align:top;line-height:1.55}
+tbody tr:last-child td{border-bottom:0}
+td.n,th.n{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+td.idx{font-family:var(--mono);color:var(--ink3);width:1%;white-space:nowrap}
+.impact{font-weight:500}
+.impact.hi{color:var(--bad)}
+
+/* 배지 */
+.b{font-family:var(--cond);font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
+  padding:2px 7px;border-radius:3px;border:1px solid;white-space:nowrap;display:inline-block}
+.b.ok{color:var(--ok);background:var(--ok-bg);border-color:var(--ok-line)}
+.b.warn{color:var(--warn);background:var(--warn-bg);border-color:var(--warn-line)}
+.b.bad{color:var(--bad);background:var(--bad-bg);border-color:var(--bad-line)}
+.b.th{color:var(--accent);background:var(--accent-soft);border-color:var(--accent)}
+.b.pl{color:var(--ink2);background:var(--surface2);border-color:var(--line2)}
+
+/* 수식 */
+.fx{font-family:var(--mono);font-size:13px;background:var(--sunk);border:1px solid var(--line);
+  border-left:2px solid var(--accent);border-radius:4px;padding:10px 13px;margin:10px 0;
+  overflow-x:auto;white-space:pre-wrap;line-height:1.8}
+
+/* 콜아웃 */
+.call{border:1px solid var(--line);border-left-width:3px;border-radius:4px;padding:13px 16px;
+  margin:14px 0;font-size:13.5px;line-height:1.65}
+.call b{display:block;margin-bottom:3px}
+.call.key{background:var(--accent-soft);border-color:var(--line);border-left-color:var(--accent)}
+.call.warn{background:var(--warn-bg);border-color:var(--warn-line);border-left-color:var(--warn)}
+.call.ok{background:var(--ok-bg);border-color:var(--ok-line);border-left-color:var(--ok)}
+
+/* 검증 눈금 */
+.vgrid{display:flex;flex-wrap:wrap;gap:1px;background:var(--line);border:1px solid var(--line);
+  border-radius:6px;overflow:hidden}
+.vcell{flex:1 1 190px;background:var(--surface);padding:11px 14px;min-width:0}
+.vcell .t{font-size:12.5px;font-weight:500;display:flex;align-items:center;gap:7px}
+.vcell .t .dot{width:7px;height:7px;border-radius:50%;background:var(--ok);flex:0 0 auto}
+.vcell .d{font-size:11.5px;color:var(--ink3);margin-top:3px;line-height:1.5}
+.vcell .c{font-family:var(--mono);font-size:11px;color:var(--ok);margin-left:auto}
+
+ul.tight{padding-left:19px;margin:8px 0 12px}
+ul.tight li{margin-bottom:5px;max-width:72ch}
+.foot{border-top:1px solid var(--line);padding-top:16px;margin-top:36px;
+  font-size:12.5px;color:var(--ink3);display:flex;flex-wrap:wrap;gap:8px 22px}
+@media(max-width:640px){
+  .wrap{padding:0 16px 60px}
+  .mast h1{font-size:25px} .mast{padding-block:26px 18px}
+  .tile{flex:1 1 46%} .tile .v{font-size:21px}
+  h2{font-size:18px;flex-wrap:wrap} h2 .tail{margin-left:0;flex-basis:100%}
+  td,th{padding:8px 10px} table{font-size:12.5px}
+}
+</style>
+
+<div class="wrap">
+
+<header class="mast">
+  <span class="eyebrow">ROLLMODEL · 개발 총정리</span>
+  <h1>롤모델 — 원본 계산기 재작성과 검증 기록</h1>
+  <p class="sub">주차로봇·AGV 캐스터의 헤르츠 접촉·트레드 구속·단부 집중·표면 인장·발열을
+    하나의 판정 흐름으로 묶은 해석 도구. 기존 계산기에서 발견한 결함, 새로 도입한 모델,
+    그리고 그것들이 실제로 맞는지 확인한 과정을 정리한다.</p>
+  <div class="meta">
+    <span>작성 2026-09-13</span><span>엔진 · UI 전면 재작성</span>
+    <span>단일 파일 · 무의존 · 오프라인 동작</span>
+  </div>
+</header>
+
+<div class="tiles">
+  <div class="tile good"><span class="k">검증 항목</span><span class="v">157<u>/157</u></span>
+    <span class="d">단일 하네스로 재실행 가능</span></div>
+  <div class="tile"><span class="k">원본에서 찾은 결함</span><span class="v">9<u>건</u></span>
+    <span class="d">면압 과소평가 · 누락 항목 포함</span></div>
+  <div class="tile"><span class="k">재작성 중 잡은 결함</span><span class="v">13<u>건</u></span>
+    <span class="d">자체 감사 6 · 적대적 검사 2 · 기타 5</span></div>
+  <div class="tile"><span class="k">전수 스윕</span><span class="v">36,000<u>조합</u></span>
+    <span class="d">NaN · 미수렴 · 예외 0</span></div>
+  <div class="tile"><span class="k">계산 속도</span><span class="v">0.35<u>ms</u></span>
+    <span class="d">1회 판정, 예산 1 ms</span></div>
+</div>
+
+<section>
+<h2><span class="no">1</span>원본 계산기에서 찾은 결함<span class="tail">9건</span></h2>
+<p class="lead">가장 큰 문제는 개별 버그가 아니라 <b>모델이 서 있는 자리</b>였다. 원본은 두 물체를
+모두 반무한체로 보는 고전 헤르츠 선접촉만 구현했는데, 주차로봇 캐스터는 그 가정이 성립하지
+않는 조합(얇은 PU 트레드 + 박막 도막 + 좁은 폭)이 표준이다.</p>
+
+<div class="tw"><table>
+<thead><tr><th class="n">#</th><th>결함</th><th>결과</th></tr></thead>
+<tbody>
+<tr><td class="idx">1</td><td>휠 트레드를 반무한체로 가정 — 허브 접착 구속 무시</td>
+  <td class="impact hi">p_max 를 1.6~2.5배 과소평가</td></tr>
+<tr><td class="idx">2</td><td>표면 인장 σ_t 항목이 아예 없음</td>
+  <td class="impact hi">에폭시 균열·콘크리트 표층 박리의 실제 개시 응력을 못 봄</td></tr>
+<tr><td class="idx">3</td><td>마찰 하 최대전단 위치를 항상 0.786b 로 고정</td>
+  <td class="impact">μ &gt; 0.30 이면 표면이 임계인데 엉뚱한 깊이를 지시</td></tr>
+<tr><td class="idx">4</td><td>단부 응력집중 없음</td>
+  <td class="impact">실제 파손이 시작되는 휠 폭 양 끝을 못 봄</td></tr>
+<tr><td class="idx">5</td><td>기재 전달압 없음</td>
+  <td class="impact">박막 도막에서 콘크리트가 받는 압력을 정량화 못 함</td></tr>
+<tr><td class="idx">6</td><td>크라운 반경 입력이 dead code</td>
+  <td class="impact">값을 넣어도 결과가 불변 — 사용자를 속임</td></tr>
+<tr><td class="idx">7</td><td>편심 모델이 휠 수와 무관하게 4점 고정</td>
+  <td class="impact">N = 6, 8 에서 분담률 오류</td></tr>
+<tr><td class="idx">8</td><td>동하중이 근거 없는 배수 (가감속·선회·단차를 임의 곱)</td>
+  <td class="impact">출처 없는 안전율 중첩</td></tr>
+<tr><td class="idx">9</td><td>속도·듀티·발열 개념 자체가 없음</td>
+  <td class="impact hi">PU 휠의 실제 정격을 결정하는 요인이 통째로 누락</td></tr>
+</tbody></table></div>
+
+<div class="call key"><b>①번이 왜 결정적인가</b>
+원본 조건(D80 × L40, 646.67 kg/캐스터)에서 구속 보정을 켜면 접촉 반폭이
+<span class="n">20.36 → 12.44 mm</span> 로 줄고 최대 접촉압이
+<span class="n">4.96 → 8.12 MPa</span> 로 오른다. <b>정확히 1.64배 과소평가</b>였고,
+이 조건에서는 허용치를 넘느냐 마느냐가 뒤집힌다.</div>
+</section>
+
+<section>
+<h2><span class="no">2</span>새로 도입한 모델<span class="tail">출처 · 신뢰도 등급</span></h2>
+<p class="lead">모든 계수는 출처 대장에 등록하고 5단계 신뢰도를 화면에 노출한다.
+출처를 댈 수 없는 계수는 코드에 넣지 않는다는 규칙을 세웠다 —
+원본의 정체불명 상수 <code>exp(−1.2·t/b)</code> 가 이 규칙이 생긴 이유다.</p>
+
+<h3>트레드 허브 구속</h3>
+<div class="fx">S = b / t,   x = 2k·S²,   M = E(1−ν) / ((1+ν)(1−2ν))
+E_app = E + (M − E)·x / (x + (M − E)/E)</div>
+<p>x→0 에서 Gent–Lindley <code>E(1+2kS²)</code>, x→∞ 에서 구속탄성계수 M 으로 수렴하도록 보간했다.
+b 가 E_app 에 되먹임되므로 감쇠 고정점 반복(α = 0.35)으로 푼다.
+<span class="b warn">근사</span> — Gent 형상계수의 검증 범위는 대략 S ≤ 2 (= t/b ≥ 0.5)이며, 게이트가 이를 감시한다.</p>
+
+<h3>표면 인장 — 균열 개시</h3>
+<div class="fx">σ_x(접촉 후단) = 2·μ_util·p_max        f_ctm = 0.30·f_ck^(2/3)</div>
+<p>마찰이 실리면 접촉 후단 표면에 인장이 생긴다. 에폭시 균열과 콘크리트 표층 박리가
+실제로 시작되는 응력이며 원본에는 이 항목 자체가 없었다.
+<span class="b th">이론해</span> Johnson §7.1 · <span class="b ok">설계기준</span> fib MC2010</p>
+
+<h3>마찰 하 최대전단 위치 전환</h3>
+<div class="fx">μ_util ≤ 0.30  →  표면 아래 0.786b 에서  τ = 0.300·p₀
+μ_util  > 0.30  →  접촉면 중앙(표면)에서   τ = μ·p₀</div>
+<p>기동 조건에 따라 동원 마찰이 달라지므로 <b>가용 마찰 μ 와 실제 동원 μ_util 을 분리</b>했다.
+직진은 <code>a/g + f_roll</code>(부분 슬립), 제자리 선회는 <code>μ</code>(완전 미끄럼).
+<span class="b th">이론해</span> Smith &amp; Liu (1953)</p>
+
+<h3>단부 응력집중 · 기재 전달압</h3>
+<div class="fx">K_edge = 1 + (K₀ − 1) / (1 + 3·R_e/b)        σ_z(t) = p_max / √(1 + (t/b)²)</div>
+<p>단부는 실측·FEM 범위 K₀ = 2~3 을 쓰는 <span class="b bad">경험식</span>이며 사용자가 조정한다.
+기재 전달압은 선접촉 축상 수직응력 감쇠식으로, 이것이 있으니 "도막이 얇다"는 사실 자체로
+설계를 죽이지 않고 <b>결과를 정량 판정</b>할 수 있게 됐다.</p>
+
+<h3>하중 체인 — 동하중을 등가편심으로</h3>
+<div class="fx">R_i = W·g·[ 1/n + e_x·x_i/Σx² + e_y·y_i/Σy² ]·k_flat
+e_dyn = (a/g)·h_cg        ← 가감속·선회 하중이동은 편심과 수학적으로 동일</div>
+<p>임의 N열 × M행 배치의 강체 탄성 분배로 일반화했다. 근거 없는 배수를 없애고
+물리 입력(가속도, 무게중심 높이)으로 대체했다. <b>주행 F_op 와 단차 피크 F_pk 를 분리</b>해
+강도는 피크로, 발열은 연속으로 판정한다.</p>
+
+<h3>발열 — PU 휠의 진짜 정격</h3>
+<div class="fx">f = (4/3π)·α·(b/R)     P = f·F·v·duty     R_th = 1/(h·A + UA_hub)     ΔT = P·R_th</div>
+<p>열 기준 허용하중은 닫힌해 <code>F(ΔT_a/ΔT)^(2/3)</code> 를 씨앗으로 이분법 정밀화한다.
+그리고 <b>제조사 연속 정격점을 넣으면 α·R_th 를 그 점에 앵커</b>하는 캘리브레이션을 넣었다 —
+지어낸 계수 대신 실측에 고정할 수 있다. <span class="b warn">근사</span> + <span class="b pl">보정</span></p>
+</section>
+
+<section>
+<h2><span class="no">3</span>재작성 중 발견하고 고친 결함<span class="tail">13건</span></h2>
+<p class="lead">새로 쓴 코드에도 결함이 있었다. 자체 감사와 적대적 입력 검사로 잡은 것들이다.</p>
+<div class="tw"><table>
+<thead><tr><th>발견 경로</th><th>결함</th><th>영향</th></tr></thead>
+<tbody>
+<tr><td><span class="b bad">자체 감사</span></td>
+  <td>열 허용하중을 닫힌해로만 계산 — 구속 보정이 걸리면 <code>b ∝ √F</code> 가 깨짐</td>
+  <td class="n impact hi">9.08% → 0.00%</td></tr>
+<tr><td><span class="b bad">자체 감사</span></td>
+  <td>직접 입력 모드에서 "자동" 표시인데 수동 충격계수 1.5 가 몰래 곱해짐</td>
+  <td class="impact hi">하중 50% 과대</td></tr>
+<tr><td><span class="b bad">자체 감사</span></td>
+  <td>타원 접촉에 평면변형(2D) 임계값을 적용 — 3D 해에 부당 감점</td><td class="impact">오판정</td></tr>
+<tr><td><span class="b bad">자체 감사</span></td>
+  <td>바퀴 인장강도를 수집만 하고 어떤 판정에도 안 씀</td>
+  <td class="impact">스틸 휠 σ_t 609 MPa 를 못 잡음</td></tr>
+<tr><td><span class="b bad">적대적 검사</span></td>
+  <td>K₀ &lt; 1 이면 단부계수가 1 미만이 되어 압력을 <i>낮춤</i></td>
+  <td class="impact hi">비물리 · 비안전측</td></tr>
+<tr><td><span class="b bad">적대적 검사</span></td>
+  <td>"치수 동시 확대" 제안의 스캔 값과 버튼 적용 값이 달랐음</td>
+  <td class="impact">눌러도 해소 안 됨</td></tr>
+<tr><td><span class="b warn">사용자 지적</span></td>
+  <td>도면 축척 자동 맞춤 — 직경을 키워도 바퀴가 안 커지고 허브만 부풂</td>
+  <td class="impact">크기 변화가 화면에서 사라짐</td></tr>
+<tr><td><span class="b pl">정리</span></td>
+  <td>1열 배치에서 종방향 편심이 조용히 무시됨 (Σx² = 0)</td><td class="impact">경고 추가</td></tr>
+<tr><td><span class="b pl">정리</span></td>
+  <td>무도장에서 f_ck 를 바꿔도 사이드바 도막 물성 표시가 낡음</td><td class="impact">표시만</td></tr>
+<tr><td><span class="b pl">정리</span></td>
+  <td>설정 불러오기 시 모드·탭 미복원</td><td class="impact">UX</td></tr>
+<tr><td><span class="b pl">정리</span></td>
+  <td>평면도가 단면도와 달리 트윈을 안 타서 애니메이션 어긋남</td><td class="impact">표시만</td></tr>
+<tr><td><span class="b pl">정리</span></td>
+  <td>죽은 상태 키 · 죽은 변수 · 입력 범위 가드 누락</td><td class="impact">위생</td></tr>
+<tr><td><span class="b pl">정리</span></td>
+  <td>도막 t/b 게이트가 박막 도막을 무조건 "불가" 처리</td>
+  <td class="impact">p_sub 가 결과를 잡으므로 분류로 강등</td></tr>
+</tbody></table></div>
+
+<div class="call warn"><b>오류가 아니었던 것 1건</b>
+타원 접촉 검증에서 27% 오차가 떴는데 <b>테스트 기대값이 틀렸다.</b> Hamrock 의 R 은
+<code>1/R = 1/Rx + 1/Ry</code>(평면 위 구면이면 R_ball/2)인데 정확해 공식에는 상대곡률반경
+R_ball 을 넣어야 한다. 바로잡으니 오차 a 1.13% · p_max 2.19% — 근사의 공표 정확도 안이었다.</div>
+</section>
+
+<section>
+<h2><span class="no">4</span>검증<span class="tail">157 / 157 통과 · node verify_physics.js</span></h2>
+<p class="lead">눈으로 보는 대신 독립 수식 대조, 극한값, 단조성, 보존량, 적대적 입력,
+전수 스윕으로 확인했다. 하나의 하네스로 언제든 재실행된다.</p>
+
+<div class="vgrid">
+  <div class="vcell"><div class="t"><span class="dot"></span>헤르츠 닫힌해<span class="c">1e-12</span></div>
+    <div class="d">b · p_max · E* · A=2bL · δ · p_max/p_avg=4/π.
+      독립 유도식 √(F·E*/πLR) 과도 일치</div></div>
+  <div class="vcell"><div class="t"><span class="dot"></span>원본 대조<span class="c">동일</span></div>
+    <div class="d">b = 20.3635 mm · p_max = 4.95814 MPa — 회귀 기준점으로 고정</div></div>
+  <div class="vcell"><div class="t"><span class="dot"></span>응력장 계수<span class="c">수치탐색</span></div>
+    <div class="d">τ_max/p₀ = 0.3003 @ z/b = 0.7861 · σ_z 감쇠식 3점</div></div>
+  <div class="vcell"><div class="t"><span class="dot"></span>구속 탄성계수 극한<span class="c">E ↔ M</span></div>
+    <div class="d">S→0 에서 E, S→∞ 에서 M. 소변형에서 Gent 식과 일치</div></div>
+  <div class="vcell"><div class="t"><span class="dot"></span>타원 접촉<span class="c">1.1 / 2.2%</span></div>
+    <div class="d">구 대칭에서 Hertz 점접촉 정확해와 대조</div></div>
+  <div class="vcell"><div class="t"><span class="dot"></span>하중 분배<span class="c">Σ = 1</span></div>
+    <div class="d">4점 고전식 일치 · 동하중 = 등가편심 등가성 확인</div></div>
+  <div class="vcell"><div class="t"><span class="dot"></span>단조성 10항목<span class="c">방향</span></div>
+    <div class="d">D↑p↓ · L↑p↓ · F↑p↑ · E↑p↑ · v↑T↑ · R_e↑K↓ · 선회&gt;직진</div></div>
+  <div class="vcell"><div class="t"><span class="dot"></span>열 모델 역검증<span class="c">0.00%</span></div>
+    <div class="d">F_allow 를 되먹여 온도 재계산 → 허용치에 정확히 착지</div></div>
+  <div class="vcell"><div class="t"><span class="dot"></span>보존량<span class="c">A·p_avg = F</span></div>
+    <div class="d">선접촉·타원 양쪽. 하중→0, 강체, μ=0 극한</div></div>
+  <div class="vcell"><div class="t"><span class="dot"></span>적대적 입력 37종<span class="c">무결</span></div>
+    <div class="d">음수·0·극대값·ν=0.5·SF=0·20×20 휠 등. NaN 0, 예외 0</div></div>
+  <div class="vcell"><div class="t"><span class="dot"></span>제안 실효성<span class="c">왕복</span></div>
+    <div class="d">제안값 적용 시 실제로 불가 해소 · 직전 값에서는 여전히 불가</div></div>
+  <div class="vcell"><div class="t"><span class="dot"></span>설정 왕복<span class="c">비트동일</span></div>
+    <div class="d">전 시나리오 저장→불러오기 후 p_max·판정 불변</div></div>
+  <div class="vcell"><div class="t"><span class="dot"></span>전수 스윕<span class="c">36,000</span></div>
+    <div class="d">재질·치수·크라운·기동·하중모드·보정 전조합. 미수렴 0</div></div>
+  <div class="vcell"><div class="t"><span class="dot"></span>브라우저<span class="c">오류 0</span></div>
+    <div class="d">상호작용 30여종 · 1440/900/430px 가로 스크롤 0</div></div>
+</div>
+
+<div class="call ok"><b>회귀 기준점 — 절대 깨뜨리지 말 것</b>
+원본 조건(D80×L40, F = 6343.83 N, 무도장 f_ck 30 / E_c = 30000 수동, 구속·층상 OFF, K₀ = 1, kS = 1)에서
+<b class="n">b = 20.3635 mm, p_max = 4.95814 MPa</b>.
+이 값이 바뀌면 헤르츠 코어가 오염된 것이다. 시나리오 <code>legacy</code> 가 이 조건이다.</div>
+</section>
+
+<section>
+<h2><span class="no">5</span>설계 방향<span class="tail">일관성 규약</span></h2>
+<p class="lead">여러 사람이 여러 시점에 손대도 같은 방향으로 자라도록 원칙을 문서로 못박았다
+(<code>DEVELOPMENT.md</code>).</p>
+<ul class="tight">
+<li><b>모든 숫자는 출처를 가진다</b> — 5단계 신뢰도(이론해 / 설계기준 / 근사 / 경험식 / 참고값)를 화면에 노출.</li>
+<li><b>경험값은 사용자가 바꿀 수 있어야 한다</b> — 하드코딩된 경험계수는 버그로 취급.</li>
+<li><b>판정에는 이유가 붙는다</b> — 게이트는 값 · 기준 · 왜 · 근거(수식/대입/출처/주석)를 모두 채운다.</li>
+<li><b>모르면 모른다고 한다</b> — 통과시키려고 가정을 느슨하게 만들지 않는다.</li>
+<li><b>안전측/비안전측 방향을 밝힌다</b> — 근사가 어느 쪽으로 기우는지 명시.</li>
+<li><b>단일 파일 · 무의존 · 오프라인</b> — 외부 라이브러리와 빌드 툴체인을 도입하지 않는다.</li>
+</ul>
+<p>UI 는 <b>계산 체인</b>이 근간이다. 하중 → 접촉 → 표면압 → 기재전달 → 전단 → 인장 → 발열 순으로
+실제 유도 순서대로 11개 검사가 세로로 흐르고, 각 행을 펼치면 수식과 근거가 나온다.
+간단 모드는 결론, 상세 모드는 유도. 시각 언어는 IBM Plex 기반 기술 콘솔에 제도(製圖) 관습을 얹었다.</p>
+</section>
+
+<section>
+<h2><span class="no">6</span>남은 한계<span class="tail">실무 영향 순</span></h2>
+<p class="lead">도구가 다루지 않는 것을 화면에도 명시해 두었다. 근거 없는 모델로 항목만 늘리는 것은
+이 도구의 가치를 떨어뜨리므로, 데이터가 확보되는 순서대로만 넣는다.</p>
+<div class="tw"><table>
+<thead><tr><th class="n">우선</th><th>항목</th><th>선행 조건</th></tr></thead>
+<tbody>
+<tr><td class="idx">1</td><td>반복 통과 피로 — 동일 궤적 수만 회 주행</td><td>S–N 데이터 확보</td></tr>
+<tr><td class="idx">2</td><td>정차 크리프 · 압흔 — 차를 물고 대기하는 시간</td><td>점탄성 시간의존 모델</td></tr>
+<tr><td class="idx">3</td><td>부분 슬립 접촉장 (Cattaneo–Mindlin)</td><td>직진 구동만. 선회는 현재도 정확</td></tr>
+<tr><td class="idx">4</td><td>축 · 베어링 L10 · 축 굽힘</td><td>좁은 폭 · 큰 하중에서 지배적</td></tr>
+<tr><td class="idx">5</td><td>콘크리트 표면 거칠기 — 골재 국부압</td><td>평활면 가정의 한계</td></tr>
+<tr><td class="idx">6</td><td>동적 구조 응답 — 프레임 유연성</td><td>현재 1자유도 상한 + 경험 감쇠</td></tr>
+</tbody></table></div>
+<div class="call warn"><b>사용 전 반드시 교체할 값</b>
+K₀(단부 예리단부 계수) · η(충격 감쇠) · α(히스테리시스 손실률) · UA_hub·h(열저항) ·
+도막 전동접촉 저감계수 · 재료 허용 접촉면압. 전부 <span class="b bad">경험식</span> ·
+<span class="b pl">참고값</span> 등급이며 화면에 그렇게 표시된다.
+<b>특히 α·R_th 는 실제 쓰는 휠의 카탈로그 연속 정격점으로 캘리브레이션할 것</b> — 도구에 기능이 있다.</div>
+</section>
+
+<section>
+<h2><span class="no">7</span>산출물</h2>
+<div class="tw"><table>
+<thead><tr><th>항목</th><th>내용</th></tr></thead>
+<tbody>
+<tr><td><b>롤모델</b> (웹)</td><td>아티팩트로 게시. 링크만 있으면 어디서든 열림, 설정·도면·CSV 저장 가능</td></tr>
+<tr><td><code>롤모델.html</code></td><td>단독 실행 파일. 오프라인·사내망에서 그대로 동작</td></tr>
+<tr><td><code>롤모델_소스.zip</code></td><td>parts/ 6개 소스 · build.sh · 검증 하네스 4종 · README · DEVELOPMENT.md</td></tr>
+<tr><td><code>DEVELOPMENT.md</code></td><td>개발 지침 279줄 — 원칙 6, 게이트 추가 절차, 검증 의무, 금지사항 10</td></tr>
+<tr><td>프로젝트 노트</td><td>모델 노트 · 개발지침 요약 — 다른 세션에서 이어받을 때 먼저 읽는 문서</td></tr>
+</tbody></table></div>
+<div class="fx">./build.sh                 # artifact.html + standalone.html 생성
+node verify_physics.js     # 157항목 — 실패 0 이어야 병합 가능
+node smoke.js              # 브라우저 상호작용 · 콘솔 오류 0
+node shot3.js              # 1440 / 900 / 430px 반응형 검사</div>
+</section>
+
+<div class="foot">
+  <span>ROLLMODEL · 캐스터 접촉 · 발열 해석</span>
+  <span>검증 157/157 · 전수 스윕 36,000 조합</span>
+  <span>회귀 기준점 b = 20.3635 mm · p_max = 4.95814 MPa</span>
+</div>
+</div>
