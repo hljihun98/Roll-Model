@@ -69,7 +69,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 .iconb svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round}
 
 /* ═══════════════════════════════════════════ 레이아웃 ═══ */
-.wrap{display:grid;grid-template-columns:1fr;max-width:1360px;margin:0 auto}
+.wrap{display:grid;grid-template-columns:1fr;max-width:1800px;margin:0 auto}
 body[data-mode="pro"] .wrap{grid-template-columns:302px 1fr}
 body[data-mode="easy"] .rail{display:none}
 .rail{border-right:1px solid var(--line);background:var(--surface);min-width:0}
@@ -173,7 +173,7 @@ select{width:100%;padding:5px 7px;background:var(--surface);border:1px solid var
 .slid{display:flex;align-items:center;gap:8px}
 .slid input[type=range]{flex:1;accent-color:var(--accent);height:16px;min-width:0}
 .slid .v{font-family:var(--mono);font-size:12.5px;width:52px;text-align:right;font-variant-numeric:tabular-nums}
-.scenario-panel{max-width:1320px;margin:18px auto 0;padding:14px 18px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r2);display:flex;align-items:center;justify-content:space-between;gap:18px}
+.scenario-panel{max-width:1760px;margin:18px auto 0;padding:14px 18px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r2);display:flex;align-items:center;justify-content:space-between;gap:18px}
 .scenario-panel label,.input-title{font-size:13px;font-weight:600;color:var(--accent)}
 .scenario-panel .hint{margin-top:4px}.scenario-panel #scen{flex:0 1 430px;max-width:430px;width:100%}
 .input-title{margin-bottom:5px}.settings-link{align-self:flex-start;font-size:11px;margin-top:auto;white-space:normal;text-align:left}
@@ -185,7 +185,7 @@ select{width:100%;padding:5px 7px;background:var(--surface);border:1px solid var
 #scenarioPanel,#strip,#verdict,.cellin,.grp{scroll-margin-top:calc(var(--top-height,55px) + 14px)}
 .rail .grp{scroll-margin-top:14px}
 .input-highlight{outline:2px solid var(--accent);outline-offset:-2px}
-@media(max-width:1360px){.scenario-panel{margin:16px 20px 0}}
+@media(max-width:1800px){.scenario-panel{margin:16px 20px 0}}
 @media(min-width:961px) and (max-width:1180px){body[data-mode="pro"] .strip{grid-template-columns:1fr 1fr}}
 @media(max-width:960px){
   .strip{grid-template-columns:1fr 1fr}.scenario-panel{margin:14px 16px 0;align-items:flex-start;flex-direction:column;gap:10px}
@@ -322,6 +322,40 @@ select{width:100%;padding:5px 7px;background:var(--surface);border:1px solid var
 /* 도면 */
 .fig{padding:8px 10px 10px}
 .fig svg{width:100%;height:auto;display:block;overflow:visible}
+.visual-column,.analysis-column{display:flex;flex-direction:column;gap:16px;min-width:0}
+.workspace-grid{display:flex;flex-direction:column;gap:16px;min-width:0}
+.visual-column .card-h{flex-wrap:wrap;gap:6px 9px;padding:9px 12px}
+.visual-column .card-h .tbtn{font-size:11px;padding:4px 8px}
+.visual-column #rollNote{flex-basis:100%;order:1;font-size:10px}
+.visual-column .fig{padding:6px 10px}
+.visual-column #figSection svg{max-height:320px}
+.visual-column #figPlan svg{max-height:210px}
+.visual-column .svg-num,.visual-column .svg-lbl{font-size:14px}
+.figure-metrics{padding:7px 12px 0;font-size:12px;color:var(--ink2);font-variant-numeric:tabular-nums;line-height:1.6}
+.figure-notes>summary{padding:7px 12px;border-top:1px solid var(--line);font-size:11px;color:var(--ink2);cursor:pointer}
+.figure-dialog{width:min(1160px,calc(100vw - 24px));max-height:calc(100dvh - 24px);padding:0;border:1px solid var(--line2);border-radius:var(--r2);background:var(--surface);color:var(--ink)}
+.figure-dialog::backdrop{background:color-mix(in srgb,var(--ink) 75%,transparent)}
+.figure-dialog>.hint{padding:8px 14px}
+#largeFigure{overflow:auto;max-height:calc(100dvh - 145px);padding:16px;overscroll-behavior:contain}
+#largeFigure svg{display:block;width:100%;min-width:800px;height:auto}
+/* 카드 폭에 맞춰 정보와 시각화를 병렬 배치. 상세 입력 레일을 열어도 최소 읽기 폭을 확보한다. */
+.main{container-type:inline-size;container-name:mainarea}
+@container mainarea (min-width:960px){
+  .workspace-grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);grid-template-areas:"inputs visuals" "verdict visuals" "alerts visuals" "analysis visuals";align-content:start;align-items:start}
+  .workspace-grid>#strip{grid-area:inputs;grid-template-columns:1fr 1fr}
+  .workspace-grid>#verdict{grid-area:verdict}.workspace-grid>#alerts{grid-area:alerts}
+  .workspace-grid>.visual-column{grid-area:visuals;position:sticky;top:calc(var(--top-height,55px) + 14px);max-height:calc(100dvh - var(--top-height,55px) - 28px);overflow:auto;scrollbar-width:thin}
+  .workspace-grid>.analysis-column{grid-area:analysis}
+  .analysis-column .two{grid-template-columns:1fr}
+  .analysis-column .rung>summary{grid-template-columns:26px 1fr;grid-template-areas:"num mid" ". val";row-gap:8px}
+  .analysis-column .stepno{grid-area:num}.analysis-column .rungmid{grid-area:mid}.analysis-column .rungright{grid-area:val;justify-content:flex-start}
+}
+@container mainarea (max-width:980px){
+  .main .two{grid-template-columns:1fr}
+  .main .rung>summary{grid-template-columns:26px 1fr;grid-template-areas:"num mid" ". val";row-gap:8px}
+  .main .stepno{grid-area:num}.main .rungmid{grid-area:mid}.main .rungright{grid-area:val;justify-content:flex-start}
+}
+@media(max-width:999px){.visual-column{gap:13px}.visual-column #figSection svg{max-height:340px}.visual-column #figPlan svg{max-height:230px}}
 .legend{display:flex;flex-wrap:wrap;gap:6px 16px;padding:9px 16px;border-top:1px solid var(--line);
   font-size:11.5px;color:var(--ink2);line-height:1.5}
 .legend span{display:flex;align-items:flex-start;gap:6px}

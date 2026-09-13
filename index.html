@@ -76,7 +76,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 .iconb svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round}
 
 /* ═══════════════════════════════════════════ 레이아웃 ═══ */
-.wrap{display:grid;grid-template-columns:1fr;max-width:1360px;margin:0 auto}
+.wrap{display:grid;grid-template-columns:1fr;max-width:1800px;margin:0 auto}
 body[data-mode="pro"] .wrap{grid-template-columns:302px 1fr}
 body[data-mode="easy"] .rail{display:none}
 .rail{border-right:1px solid var(--line);background:var(--surface);min-width:0}
@@ -180,7 +180,7 @@ select{width:100%;padding:5px 7px;background:var(--surface);border:1px solid var
 .slid{display:flex;align-items:center;gap:8px}
 .slid input[type=range]{flex:1;accent-color:var(--accent);height:16px;min-width:0}
 .slid .v{font-family:var(--mono);font-size:12.5px;width:52px;text-align:right;font-variant-numeric:tabular-nums}
-.scenario-panel{max-width:1320px;margin:18px auto 0;padding:14px 18px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r2);display:flex;align-items:center;justify-content:space-between;gap:18px}
+.scenario-panel{max-width:1760px;margin:18px auto 0;padding:14px 18px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r2);display:flex;align-items:center;justify-content:space-between;gap:18px}
 .scenario-panel label,.input-title{font-size:13px;font-weight:600;color:var(--accent)}
 .scenario-panel .hint{margin-top:4px}.scenario-panel #scen{flex:0 1 430px;max-width:430px;width:100%}
 .input-title{margin-bottom:5px}.settings-link{align-self:flex-start;font-size:11px;margin-top:auto;white-space:normal;text-align:left}
@@ -192,7 +192,7 @@ select{width:100%;padding:5px 7px;background:var(--surface);border:1px solid var
 #scenarioPanel,#strip,#verdict,.cellin,.grp{scroll-margin-top:calc(var(--top-height,55px) + 14px)}
 .rail .grp{scroll-margin-top:14px}
 .input-highlight{outline:2px solid var(--accent);outline-offset:-2px}
-@media(max-width:1360px){.scenario-panel{margin:16px 20px 0}}
+@media(max-width:1800px){.scenario-panel{margin:16px 20px 0}}
 @media(min-width:961px) and (max-width:1180px){body[data-mode="pro"] .strip{grid-template-columns:1fr 1fr}}
 @media(max-width:960px){
   .strip{grid-template-columns:1fr 1fr}.scenario-panel{margin:14px 16px 0;align-items:flex-start;flex-direction:column;gap:10px}
@@ -329,6 +329,40 @@ select{width:100%;padding:5px 7px;background:var(--surface);border:1px solid var
 /* 도면 */
 .fig{padding:8px 10px 10px}
 .fig svg{width:100%;height:auto;display:block;overflow:visible}
+.visual-column,.analysis-column{display:flex;flex-direction:column;gap:16px;min-width:0}
+.workspace-grid{display:flex;flex-direction:column;gap:16px;min-width:0}
+.visual-column .card-h{flex-wrap:wrap;gap:6px 9px;padding:9px 12px}
+.visual-column .card-h .tbtn{font-size:11px;padding:4px 8px}
+.visual-column #rollNote{flex-basis:100%;order:1;font-size:10px}
+.visual-column .fig{padding:6px 10px}
+.visual-column #figSection svg{max-height:320px}
+.visual-column #figPlan svg{max-height:210px}
+.visual-column .svg-num,.visual-column .svg-lbl{font-size:14px}
+.figure-metrics{padding:7px 12px 0;font-size:12px;color:var(--ink2);font-variant-numeric:tabular-nums;line-height:1.6}
+.figure-notes>summary{padding:7px 12px;border-top:1px solid var(--line);font-size:11px;color:var(--ink2);cursor:pointer}
+.figure-dialog{width:min(1160px,calc(100vw - 24px));max-height:calc(100dvh - 24px);padding:0;border:1px solid var(--line2);border-radius:var(--r2);background:var(--surface);color:var(--ink)}
+.figure-dialog::backdrop{background:color-mix(in srgb,var(--ink) 75%,transparent)}
+.figure-dialog>.hint{padding:8px 14px}
+#largeFigure{overflow:auto;max-height:calc(100dvh - 145px);padding:16px;overscroll-behavior:contain}
+#largeFigure svg{display:block;width:100%;min-width:800px;height:auto}
+/* 카드 폭에 맞춰 정보와 시각화를 병렬 배치. 상세 입력 레일을 열어도 최소 읽기 폭을 확보한다. */
+.main{container-type:inline-size;container-name:mainarea}
+@container mainarea (min-width:960px){
+  .workspace-grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);grid-template-areas:"inputs visuals" "verdict visuals" "alerts visuals" "analysis visuals";align-content:start;align-items:start}
+  .workspace-grid>#strip{grid-area:inputs;grid-template-columns:1fr 1fr}
+  .workspace-grid>#verdict{grid-area:verdict}.workspace-grid>#alerts{grid-area:alerts}
+  .workspace-grid>.visual-column{grid-area:visuals;position:sticky;top:calc(var(--top-height,55px) + 14px);max-height:calc(100dvh - var(--top-height,55px) - 28px);overflow:auto;scrollbar-width:thin}
+  .workspace-grid>.analysis-column{grid-area:analysis}
+  .analysis-column .two{grid-template-columns:1fr}
+  .analysis-column .rung>summary{grid-template-columns:26px 1fr;grid-template-areas:"num mid" ". val";row-gap:8px}
+  .analysis-column .stepno{grid-area:num}.analysis-column .rungmid{grid-area:mid}.analysis-column .rungright{grid-area:val;justify-content:flex-start}
+}
+@container mainarea (max-width:980px){
+  .main .two{grid-template-columns:1fr}
+  .main .rung>summary{grid-template-columns:26px 1fr;grid-template-areas:"num mid" ". val";row-gap:8px}
+  .main .stepno{grid-area:num}.main .rungmid{grid-area:mid}.main .rungright{grid-area:val;justify-content:flex-start}
+}
+@media(max-width:999px){.visual-column{gap:13px}.visual-column #figSection svg{max-height:340px}.visual-column #figPlan svg{max-height:230px}}
 .legend{display:flex;flex-wrap:wrap;gap:6px 16px;padding:9px 16px;border-top:1px solid var(--line);
   font-size:11.5px;color:var(--ink2);line-height:1.5}
 .legend span{display:flex;align-items:flex-start;gap:6px}
@@ -418,16 +452,25 @@ body[data-mode="pro"] .easy-only{display:none}
 <aside class="rail" id="rail" aria-label="상세 입력"><div class="rail-in"><div class="rail-heading"><b>상세 입력</b><button class="tbtn" id="settingsDone">결과 보기</button></div><div id="railIn"></div></div></aside>
 
 <main class="main">
+  <div class="workspace-grid">
   <section class="strip" id="strip"></section>
   <section class="verdict" id="verdict" data-s="ok" tabindex="-1" aria-label="⑥ 판정 결과"></section>
   <div id="alerts" style="display:flex;flex-direction:column;gap:10px"></div>
+  <aside class="visual-column" aria-label="접촉 시각화">
   <section class="card hero-fig" id="heroCard">
     <div class="card-h"><b>접촉 단면</b><span id="figTag"></span><span class="sp"></span>
       <span class="hint" id="rollNote"></span>
+      <button class="tbtn" data-enlarge="figSection" aria-label="접촉 단면 크게 보기" aria-haspopup="dialog">크게 보기</button>
       <button class="tbtn" id="btnSvg" data-save>도면 저장</button></div>
-    <div class="fig" id="figSection"></div>
-    <div class="legend" id="figLegend"></div>
+    <p class="figure-metrics" id="sectionReadout"></p><div class="fig" id="figSection"></div>
+    <details class="figure-notes"><summary>재료·계산 정보</summary><div class="legend" id="figLegend"></div></details>
   </section>
+  <section class="card" id="planCard">
+    <div class="card-h"><b>접촉 자국 · 단부 집중</b><span id="planTag"></span><span class="sp"></span><button class="tbtn" data-enlarge="figPlan" aria-label="접촉 자국 크게 보기" aria-haspopup="dialog">크게 보기</button></div>
+    <p class="figure-metrics" id="planReadout"></p><div class="fig" id="figPlan"></div><details class="figure-notes"><summary>분포·허용치 정보</summary><div class="legend" id="planLegend"></div></details>
+  </section>
+  </aside>
+  <div class="analysis-column">
   <nav class="tabs pro-only frow" id="tabs" role="tablist" style="display:none"></nav>
 
   <section id="viewChain" style="display:flex;flex-direction:column;gap:16px">
@@ -437,10 +480,6 @@ body[data-mode="pro"] .easy-only{display:none}
         <p class="hint" style="margin-top:9px">단일 변수 제안은 <b>그 값 하나만</b> 바꿔 스캔 범위에서 찾은 개선값입니다. 치수 동시 확대는 표시된 치수를 함께 바꿉니다. 주의 판정이 남을 수 있습니다.</p></div>
     </div>
     <section class="ladder" id="ladder"></section>
-    <section class="card" id="planCard">
-      <div class="card-h"><b>접촉 자국 · 단부 집중</b><span id="planTag"></span></div>
-      <div class="fig" id="figPlan"></div><div class="legend" id="planLegend"></div>
-    </section>
     <div class="two pro-only" style="display:none">
       <div class="card"><div class="card-h"><b>깊이 방향 응력</b><span>τ(z) · σ_z(z)</span></div>
         <div class="fig" id="figDepth"></div><div class="legend" id="depthLegend"></div></div>
@@ -492,9 +531,12 @@ body[data-mode="pro"] .easy-only{display:none}
     <div class="card"><div class="card-h"><b>이 해석기가 다루지 않는 것</b></div>
       <div class="card-b" id="limits"></div></div>
   </section>
+  </div>
+  </div>
 </main>
 </div>
 <nav class="mobile-jump" aria-label="화면 바로가기"><button id="jumpInputs">입력 보기</button><button id="jumpResults">판정 결과 보기</button></nav>
+<dialog class="figure-dialog" id="figureDialog" aria-labelledby="figureDialogTitle"><div class="card-h"><b id="figureDialogTitle">접촉 그림 크게 보기</b><span class="sp"></span><button class="tbtn" id="closeFigure">닫기</button></div><p class="hint">작은 화면에서는 그림을 좌우로 스크롤해 확인하세요.</p><div id="largeFigure" tabindex="0" aria-label="확대 그림 스크롤 영역"></div></dialog>
 <script>
 /* ============================================================================
    STATE — 기본값은 주차로봇 대차 조건(승용차 적재)에 맞춰 잡았다.
@@ -1649,9 +1691,9 @@ function wheelBody(g, CX, cy, Rs, bs, FY, c, phase, R, sc){
 
 function figSection(c){
   const nw=NARROW();
-  const W  = nw?470:920,  H = nw?608:400;
-  const PW = nw?W:520,    FY= nw?220:270, DEP = nw?48:59;
-  const DX = nw?12:548,   DY= nw?310:18,  DW  = nw?W-24:W-560;
+  const W  = nw?470:920,  H = nw?524:400;
+  const PW = nw?W:520,    FY= nw?170:270, DEP = nw?32:59;
+  const DX = nw?12:548,   DY= nw?224:18,  DW  = nw?W-24:W-560;
   const svg=sv('svg',{viewBox:`0 0 ${W} ${H}`,role:'img'});
   svg.setAttribute('aria-label',
     `접촉 단면. 바퀴 직경 ${S.D} mm, 접촉 전폭 ${fmt(2*c.r.b,2)} mm, 최대 접촉압 ${fmt(c.r.pmax,2)} MPa`);
@@ -1691,14 +1733,14 @@ function figSection(c){
     [0,len].forEach(o=>g.append(sv('line',{x1:sx+o,y1:sy-5,x2:sx+o,y2:sy+5,stroke:'var(--ink)','stroke-width':1.4})));
     g.append(sv('line',{x1:sx+len/2,y1:sy-3,x2:sx+len/2,y2:sy+3,stroke:'var(--ink3)','stroke-width':1}));
     txt(g,sx,sy-8,`${fmt(unit,unit<1?1:0)} mm`); })();
-  const rd=clamp(bs*1.45,26,64), la=-34*Math.PI/180;
+  const rd=clamp(bs*1.45,26,nw?42:64), la=-34*Math.PI/180;
   g.append(sv('circle',{cx:CX,cy:FY,r:rd,fill:'none',stroke:'var(--ink3)','stroke-width':1,'stroke-dasharray':'5 4'}));
   const lx=CX+rd*Math.cos(la), ly=FY+rd*Math.sin(la);
   g.append(sv('line',{x1:lx,y1:ly,x2:lx+30,y2:ly-22,class:'svg-dim'}));
   txt(g,lx+34,ly-24,'A',{cls:'svg-lbl'});
 
   /* ───────── 패널 B : 상세 A (확대 접촉부) ───────── */
-  const ph   = nw?112:124;
+  const ph   = nw?104:124;
   const pBase= DY+52+ph;
   // 바닥 텍스처를 기존 높이의 절반으로 줄이고 압력·도막 관계를 우선 배치.
   const floorDepth=nw?40:114, fBot=pBase+floorDepth;
@@ -1780,11 +1822,11 @@ function figSection(c){
 /* ══════════════════════ 접촉 자국 평면도 + 폭방향 압력 ══ */
 function figPlan(c){
   const nw=NARROW();
-  const W=nw?460:880, H=nw?430:250;
-  const svg=sv('svg',{viewBox:`0 0 ${W} ${H}`}); const g=sv('g'); svg.append(g);
+  const W=nw?460:880, H=nw?370:250;
+  const svg=sv('svg',{viewBox:`0 0 ${W} ${H}`,role:'img','aria-label':`접촉 자국과 단부 압력. 접촉 전폭 ${fmt(2*c.r.b,2)} mm, 단부 압력 ${fmt(c.pEdge,2)} MPa`}); const g=sv('g'); svg.append(g);
   const b=DISP.b, Le=c.line?DISP.Le:2*c.r.a, K=c.line?c.Kedge:1;
   /* 평면도 */
-  const AW=nw?W-40:380, AX=nw?20:20, AY=nw?90:112;
+  const AW=nw?W-40:380, AX=20, AY=nw?105:112;
   const ps=Math.min(AW/Le, 62/Math.max(2*b,1e-3));
   const pw=Le*ps, ph=Math.max(2*b*ps,4), px0=AX+(AW-pw)/2, top=AY-ph/2;
   const st=SC(c.G.ar.s);
@@ -1797,10 +1839,10 @@ function figPlan(c){
     txt(g,px0+pw/2,top-9,`단부 K ${fmt(K,2)} → ${fmt(c.pEdge,1)} MPa`,{anchor:'middle',fill:'var(--bad)'}); }
   g.append(sv('line',{x1:px0-12,y1:AY,x2:px0+pw+12,y2:AY,class:'svg-cl'}));
   hdim(g,px0,px0+pw,top+ph+30,`${c.line?'L_eff':'2a'} ${fmt(Le,1)}`,{ext:26});
-  txt(g,px0+pw/2,top+ph+56,'← 주행 방향',{cls:'svg-lbl',anchor:'middle'});
+  txt(g,px0+pw/2,top+ph+(nw?45:56),'← 주행 방향',{cls:'svg-lbl',anchor:'middle'});
   /* 폭 방향 압력 */
-  const BX=nw?36:470, BY=nw?H-52:H-52, BW=nw?W-56:380, BH=nw?150:150;
-  txt(g,BX,nw?250:26,'폭 방향 압력분포 p(y)',{cls:'svg-lbl'});
+  const BX=nw?36:470, BY=H-52, BW=nw?W-56:380, BH=nw?80:150;
+  txt(g,BX,nw?210:26,'폭 방향 압력분포 p(y)',{cls:'svg-lbl'});
   axis(g,BX,BY,BX+BW,BY);
   const base=BH/Math.max(K,1), frac=.14;
   let e=`M${BX} ${BY}`;
@@ -2195,6 +2237,26 @@ function buildUI(){
     r.readAsText(f); e.target.value='';};
   $('#btnSvg').onclick=exportSvg;
   $('#btnCsv').onclick=exportCsv;
+  const figureDialog=$('#figureDialog');let figureTrigger;
+  $$('[data-enlarge]').forEach(button=>button.onclick=()=>{
+    const source=$('#'+button.dataset.enlarge+' svg');if(!source)return;
+    const copy=source.cloneNode(true),ids=new Map();
+    copy.querySelectorAll('[id]').forEach(e=>{ids.set(e.id,'enlarged-'+e.id);e.id='enlarged-'+e.id;});
+    copy.querySelectorAll('*').forEach(e=>[...e.attributes].forEach(a=>{
+      let value=a.value;ids.forEach((next,old)=>{value=value.split(`url(#${old})`).join(`url(#${next})`);});
+      if(value!==a.value)e.setAttribute(a.name,value);
+    }));
+    figureTrigger=button;$('#largeFigure').replaceChildren(copy);
+    $('#figureDialogTitle').textContent=button.dataset.enlarge==='figSection'?'접촉 단면 크게 보기':'접촉 자국 · 단부 집중 크게 보기';
+    figureDialog.showModal();$('#largeFigure').scrollTo(0,0);$('#closeFigure').focus();
+  });
+  $('#closeFigure').onclick=()=>figureDialog.close();
+  figureDialog.addEventListener('close',()=>{$('#largeFigure').replaceChildren();figureTrigger?.focus({preventScroll:true});});
+  figureDialog.addEventListener('keydown',e=>{
+    if(e.key!=='Tab')return;
+    if(e.shiftKey&&document.activeElement===$('#closeFigure')){e.preventDefault();$('#largeFigure').focus();}
+    else if(!e.shiftKey&&document.activeElement===$('#largeFigure')){e.preventDefault();$('#closeFigure').focus();}
+  });
 }
 
 function syncInputs(){
@@ -2325,6 +2387,7 @@ function render(){
     ['sF','sFsub','sWsub','sFfsub','sVsub','sMsub','figTag','planTag','rollNote','thTag','rvTag','resTag','loadTag','mxTag','hintFrac'].forEach(id=>$('#'+id).textContent='—');
     if($('#btnCal'))$('#btnCal').disabled=true;
     $('#btnSvg').disabled=true; $('#btnCsv').disabled=true; $('#btnJson').disabled=true;
+    $$('[data-enlarge]').forEach(b=>b.disabled=true);
     $('#verdict').dataset.s='bad';
     $('#verdict').innerHTML=`<div class="verdict-h"><div class="vmark">×</div><div class="vtxt">
       <h2>입력값을 계산할 수 없습니다</h2><p>${esc(c.error)}</p></div></div>`;
@@ -2334,6 +2397,7 @@ function render(){
   }
   C=c;
   $('#btnSvg').disabled=false; $('#btnCsv').disabled=false; $('#btnJson').disabled=false;
+  $$('[data-enlarge]').forEach(b=>b.disabled=false);
   renderVerdict(c); renderAlerts(c); renderLadder(c); renderFixes(c);
   renderLoad(c); renderResults(c);
   tween({b:c.r.b, R:c.r.R1, pen:c.r.delta, pmax:c.r.pmax, Le:c.Le}, ()=>{
@@ -2353,6 +2417,8 @@ function render(){
 }
 function updateTags(c){
   const t=(id,v)=>{const e=$('#'+id); if(e)e.textContent=v;};
+  t('sectionReadout',c?`최대 접촉압 ${fmt(c.r.pmax,2)} MPa · 접촉 전폭 ${fmt(2*c.r.b,2)} mm`:'계산 가능한 입력을 확인하세요.');
+  t('planReadout',c?`단부 압력 ${fmt(c.pEdge,2)} MPa · 허용 ${fmt(c.allow.surf,2)} MPa`:'계산 가능한 입력을 확인하세요.');
   t('tgLoad', c?`${fmt(c.Fop,0)} N`:'—');
   t('tgWheel',`D${S.D}×L${S.L}`);
   t('tgFloor',S.fT>0?`t ${fmt(S.fT,1)} mm`:'무도장');

@@ -7,8 +7,10 @@ withBrowser(async(browser,url)=>{
     await p.goto(url);
     const position=()=>p.evaluate(()=>Object.fromEntries(['scenarioPanel','strip','verdict','heroCard','ladder','planCard'].map(id=>[id,document.getElementById(id).getBoundingClientRect().top+scrollY])));
     const initial=await position();
-    assert.ok(initial.scenarioPanel<initial.strip&&initial.strip<initial.verdict&&initial.verdict<initial.heroCard);
-    assert.ok(initial.ladder<initial.planCard);
+    assert.ok(initial.scenarioPanel<initial.strip&&initial.strip<initial.verdict);
+    const split=await p.locator('.workspace-grid').evaluate(e=>getComputedStyle(e).display==='grid');
+    if(split)assert.ok(Math.abs(initial.strip-initial.heroCard)<2);
+    else assert.ok(initial.verdict<initial.heroCard&&initial.heroCard<initial.planCard&&initial.planCard<initial.ladder);
     assert.deepEqual(await p.locator('#strip>.cellin').evaluateAll(es=>es.map(e=>e.id)),['inputLoad','inputWheel','inputFloor','inputRun']);
     await p.click('[data-settings="Load"]');
     assert.equal(await p.locator('#settingsLoad').getAttribute('open'),'');

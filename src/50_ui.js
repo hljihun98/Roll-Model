@@ -459,9 +459,9 @@ function wheelBody(g, CX, cy, Rs, bs, FY, c, phase, R, sc){
 
 function figSection(c){
   const nw=NARROW();
-  const W  = nw?470:920,  H = nw?608:400;
-  const PW = nw?W:520,    FY= nw?220:270, DEP = nw?48:59;
-  const DX = nw?12:548,   DY= nw?310:18,  DW  = nw?W-24:W-560;
+  const W  = nw?470:920,  H = nw?524:400;
+  const PW = nw?W:520,    FY= nw?170:270, DEP = nw?32:59;
+  const DX = nw?12:548,   DY= nw?224:18,  DW  = nw?W-24:W-560;
   const svg=sv('svg',{viewBox:`0 0 ${W} ${H}`,role:'img'});
   svg.setAttribute('aria-label',
     `접촉 단면. 바퀴 직경 ${S.D} mm, 접촉 전폭 ${fmt(2*c.r.b,2)} mm, 최대 접촉압 ${fmt(c.r.pmax,2)} MPa`);
@@ -501,14 +501,14 @@ function figSection(c){
     [0,len].forEach(o=>g.append(sv('line',{x1:sx+o,y1:sy-5,x2:sx+o,y2:sy+5,stroke:'var(--ink)','stroke-width':1.4})));
     g.append(sv('line',{x1:sx+len/2,y1:sy-3,x2:sx+len/2,y2:sy+3,stroke:'var(--ink3)','stroke-width':1}));
     txt(g,sx,sy-8,`${fmt(unit,unit<1?1:0)} mm`); })();
-  const rd=clamp(bs*1.45,26,64), la=-34*Math.PI/180;
+  const rd=clamp(bs*1.45,26,nw?42:64), la=-34*Math.PI/180;
   g.append(sv('circle',{cx:CX,cy:FY,r:rd,fill:'none',stroke:'var(--ink3)','stroke-width':1,'stroke-dasharray':'5 4'}));
   const lx=CX+rd*Math.cos(la), ly=FY+rd*Math.sin(la);
   g.append(sv('line',{x1:lx,y1:ly,x2:lx+30,y2:ly-22,class:'svg-dim'}));
   txt(g,lx+34,ly-24,'A',{cls:'svg-lbl'});
 
   /* ───────── 패널 B : 상세 A (확대 접촉부) ───────── */
-  const ph   = nw?112:124;
+  const ph   = nw?104:124;
   const pBase= DY+52+ph;
   // 바닥 텍스처를 기존 높이의 절반으로 줄이고 압력·도막 관계를 우선 배치.
   const floorDepth=nw?40:114, fBot=pBase+floorDepth;
@@ -590,11 +590,11 @@ function figSection(c){
 /* ══════════════════════ 접촉 자국 평면도 + 폭방향 압력 ══ */
 function figPlan(c){
   const nw=NARROW();
-  const W=nw?460:880, H=nw?430:250;
-  const svg=sv('svg',{viewBox:`0 0 ${W} ${H}`}); const g=sv('g'); svg.append(g);
+  const W=nw?460:880, H=nw?370:250;
+  const svg=sv('svg',{viewBox:`0 0 ${W} ${H}`,role:'img','aria-label':`접촉 자국과 단부 압력. 접촉 전폭 ${fmt(2*c.r.b,2)} mm, 단부 압력 ${fmt(c.pEdge,2)} MPa`}); const g=sv('g'); svg.append(g);
   const b=DISP.b, Le=c.line?DISP.Le:2*c.r.a, K=c.line?c.Kedge:1;
   /* 평면도 */
-  const AW=nw?W-40:380, AX=nw?20:20, AY=nw?90:112;
+  const AW=nw?W-40:380, AX=20, AY=nw?105:112;
   const ps=Math.min(AW/Le, 62/Math.max(2*b,1e-3));
   const pw=Le*ps, ph=Math.max(2*b*ps,4), px0=AX+(AW-pw)/2, top=AY-ph/2;
   const st=SC(c.G.ar.s);
@@ -607,10 +607,10 @@ function figPlan(c){
     txt(g,px0+pw/2,top-9,`단부 K ${fmt(K,2)} → ${fmt(c.pEdge,1)} MPa`,{anchor:'middle',fill:'var(--bad)'}); }
   g.append(sv('line',{x1:px0-12,y1:AY,x2:px0+pw+12,y2:AY,class:'svg-cl'}));
   hdim(g,px0,px0+pw,top+ph+30,`${c.line?'L_eff':'2a'} ${fmt(Le,1)}`,{ext:26});
-  txt(g,px0+pw/2,top+ph+56,'← 주행 방향',{cls:'svg-lbl',anchor:'middle'});
+  txt(g,px0+pw/2,top+ph+(nw?45:56),'← 주행 방향',{cls:'svg-lbl',anchor:'middle'});
   /* 폭 방향 압력 */
-  const BX=nw?36:470, BY=nw?H-52:H-52, BW=nw?W-56:380, BH=nw?150:150;
-  txt(g,BX,nw?250:26,'폭 방향 압력분포 p(y)',{cls:'svg-lbl'});
+  const BX=nw?36:470, BY=H-52, BW=nw?W-56:380, BH=nw?80:150;
+  txt(g,BX,nw?210:26,'폭 방향 압력분포 p(y)',{cls:'svg-lbl'});
   axis(g,BX,BY,BX+BW,BY);
   const base=BH/Math.max(K,1), frac=.14;
   let e=`M${BX} ${BY}`;
@@ -1005,6 +1005,26 @@ function buildUI(){
     r.readAsText(f); e.target.value='';};
   $('#btnSvg').onclick=exportSvg;
   $('#btnCsv').onclick=exportCsv;
+  const figureDialog=$('#figureDialog');let figureTrigger;
+  $$('[data-enlarge]').forEach(button=>button.onclick=()=>{
+    const source=$('#'+button.dataset.enlarge+' svg');if(!source)return;
+    const copy=source.cloneNode(true),ids=new Map();
+    copy.querySelectorAll('[id]').forEach(e=>{ids.set(e.id,'enlarged-'+e.id);e.id='enlarged-'+e.id;});
+    copy.querySelectorAll('*').forEach(e=>[...e.attributes].forEach(a=>{
+      let value=a.value;ids.forEach((next,old)=>{value=value.split(`url(#${old})`).join(`url(#${next})`);});
+      if(value!==a.value)e.setAttribute(a.name,value);
+    }));
+    figureTrigger=button;$('#largeFigure').replaceChildren(copy);
+    $('#figureDialogTitle').textContent=button.dataset.enlarge==='figSection'?'접촉 단면 크게 보기':'접촉 자국 · 단부 집중 크게 보기';
+    figureDialog.showModal();$('#largeFigure').scrollTo(0,0);$('#closeFigure').focus();
+  });
+  $('#closeFigure').onclick=()=>figureDialog.close();
+  figureDialog.addEventListener('close',()=>{$('#largeFigure').replaceChildren();figureTrigger?.focus({preventScroll:true});});
+  figureDialog.addEventListener('keydown',e=>{
+    if(e.key!=='Tab')return;
+    if(e.shiftKey&&document.activeElement===$('#closeFigure')){e.preventDefault();$('#largeFigure').focus();}
+    else if(!e.shiftKey&&document.activeElement===$('#largeFigure')){e.preventDefault();$('#closeFigure').focus();}
+  });
 }
 
 function syncInputs(){
@@ -1135,6 +1155,7 @@ function render(){
     ['sF','sFsub','sWsub','sFfsub','sVsub','sMsub','figTag','planTag','rollNote','thTag','rvTag','resTag','loadTag','mxTag','hintFrac'].forEach(id=>$('#'+id).textContent='—');
     if($('#btnCal'))$('#btnCal').disabled=true;
     $('#btnSvg').disabled=true; $('#btnCsv').disabled=true; $('#btnJson').disabled=true;
+    $$('[data-enlarge]').forEach(b=>b.disabled=true);
     $('#verdict').dataset.s='bad';
     $('#verdict').innerHTML=`<div class="verdict-h"><div class="vmark">×</div><div class="vtxt">
       <h2>입력값을 계산할 수 없습니다</h2><p>${esc(c.error)}</p></div></div>`;
@@ -1144,6 +1165,7 @@ function render(){
   }
   C=c;
   $('#btnSvg').disabled=false; $('#btnCsv').disabled=false; $('#btnJson').disabled=false;
+  $$('[data-enlarge]').forEach(b=>b.disabled=false);
   renderVerdict(c); renderAlerts(c); renderLadder(c); renderFixes(c);
   renderLoad(c); renderResults(c);
   tween({b:c.r.b, R:c.r.R1, pen:c.r.delta, pmax:c.r.pmax, Le:c.Le}, ()=>{
@@ -1163,6 +1185,8 @@ function render(){
 }
 function updateTags(c){
   const t=(id,v)=>{const e=$('#'+id); if(e)e.textContent=v;};
+  t('sectionReadout',c?`최대 접촉압 ${fmt(c.r.pmax,2)} MPa · 접촉 전폭 ${fmt(2*c.r.b,2)} mm`:'계산 가능한 입력을 확인하세요.');
+  t('planReadout',c?`단부 압력 ${fmt(c.pEdge,2)} MPa · 허용 ${fmt(c.allow.surf,2)} MPa`:'계산 가능한 입력을 확인하세요.');
   t('tgLoad', c?`${fmt(c.Fop,0)} N`:'—');
   t('tgWheel',`D${S.D}×L${S.L}`);
   t('tgFloor',S.fT>0?`t ${fmt(S.fT,1)} mm`:'무도장');

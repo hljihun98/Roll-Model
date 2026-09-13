@@ -24,16 +24,25 @@
 <aside class="rail" id="rail" aria-label="상세 입력"><div class="rail-in"><div class="rail-heading"><b>상세 입력</b><button class="tbtn" id="settingsDone">결과 보기</button></div><div id="railIn"></div></div></aside>
 
 <main class="main">
+  <div class="workspace-grid">
   <section class="strip" id="strip"></section>
   <section class="verdict" id="verdict" data-s="ok" tabindex="-1" aria-label="⑥ 판정 결과"></section>
   <div id="alerts" style="display:flex;flex-direction:column;gap:10px"></div>
+  <aside class="visual-column" aria-label="접촉 시각화">
   <section class="card hero-fig" id="heroCard">
     <div class="card-h"><b>접촉 단면</b><span id="figTag"></span><span class="sp"></span>
       <span class="hint" id="rollNote"></span>
+      <button class="tbtn" data-enlarge="figSection" aria-label="접촉 단면 크게 보기" aria-haspopup="dialog">크게 보기</button>
       <button class="tbtn" id="btnSvg" data-save>도면 저장</button></div>
-    <div class="fig" id="figSection"></div>
-    <div class="legend" id="figLegend"></div>
+    <p class="figure-metrics" id="sectionReadout"></p><div class="fig" id="figSection"></div>
+    <details class="figure-notes"><summary>재료·계산 정보</summary><div class="legend" id="figLegend"></div></details>
   </section>
+  <section class="card" id="planCard">
+    <div class="card-h"><b>접촉 자국 · 단부 집중</b><span id="planTag"></span><span class="sp"></span><button class="tbtn" data-enlarge="figPlan" aria-label="접촉 자국 크게 보기" aria-haspopup="dialog">크게 보기</button></div>
+    <p class="figure-metrics" id="planReadout"></p><div class="fig" id="figPlan"></div><details class="figure-notes"><summary>분포·허용치 정보</summary><div class="legend" id="planLegend"></div></details>
+  </section>
+  </aside>
+  <div class="analysis-column">
   <nav class="tabs pro-only frow" id="tabs" role="tablist" style="display:none"></nav>
 
   <section id="viewChain" style="display:flex;flex-direction:column;gap:16px">
@@ -43,10 +52,6 @@
         <p class="hint" style="margin-top:9px">단일 변수 제안은 <b>그 값 하나만</b> 바꿔 스캔 범위에서 찾은 개선값입니다. 치수 동시 확대는 표시된 치수를 함께 바꿉니다. 주의 판정이 남을 수 있습니다.</p></div>
     </div>
     <section class="ladder" id="ladder"></section>
-    <section class="card" id="planCard">
-      <div class="card-h"><b>접촉 자국 · 단부 집중</b><span id="planTag"></span></div>
-      <div class="fig" id="figPlan"></div><div class="legend" id="planLegend"></div>
-    </section>
     <div class="two pro-only" style="display:none">
       <div class="card"><div class="card-h"><b>깊이 방향 응력</b><span>τ(z) · σ_z(z)</span></div>
         <div class="fig" id="figDepth"></div><div class="legend" id="depthLegend"></div></div>
@@ -98,6 +103,9 @@
     <div class="card"><div class="card-h"><b>이 해석기가 다루지 않는 것</b></div>
       <div class="card-b" id="limits"></div></div>
   </section>
+  </div>
+  </div>
 </main>
 </div>
 <nav class="mobile-jump" aria-label="화면 바로가기"><button id="jumpInputs">입력 보기</button><button id="jumpResults">판정 결과 보기</button></nav>
+<dialog class="figure-dialog" id="figureDialog" aria-labelledby="figureDialogTitle"><div class="card-h"><b id="figureDialogTitle">접촉 그림 크게 보기</b><span class="sp"></span><button class="tbtn" id="closeFigure">닫기</button></div><p class="hint">작은 화면에서는 그림을 좌우로 스크롤해 확인하세요.</p><div id="largeFigure" tabindex="0" aria-label="확대 그림 스크롤 영역"></div></dialog>
