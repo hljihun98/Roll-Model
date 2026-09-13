@@ -335,4 +335,26 @@ body[data-mode="pro"] .pro-only.field{display:grid}
 body[data-mode="pro"] .pro-only.frow{display:flex}
 .easy-only{display:block}
 body[data-mode="pro"] .easy-only{display:none}
+/* 처음 사용자 안내 */
+.guide{width:min(820px,calc(100vw - 24px));max-height:calc(100dvh - 24px);padding:0;border:1px solid var(--line2);border-radius:16px;background:var(--surface);color:var(--ink);box-shadow:0 24px 80px color-mix(in srgb,var(--ink) 25%,transparent);overflow:hidden}
+.guide::backdrop{background:color-mix(in srgb,var(--ink) 80%,transparent);backdrop-filter:blur(3px)}
+.guide-head,.guide-foot{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:20px 24px}
+.guide-head h2{font-size:19px;line-height:1.4;margin:5px 0 0}.guide-head button{flex-shrink:0}
+.guide-progress{height:3px;background:var(--line)}.guide-progress span{display:block;height:100%;background:var(--accent);transition:width .25s}
+.guide-body{display:grid;grid-template-columns:1fr 1fr;gap:26px;padding:24px;max-height:calc(100dvh - 220px);overflow:auto;overscroll-behavior:contain}
+.guide-copy h3{font-size:22px;line-height:1.45;margin:10px 0 14px;letter-spacing:-.04em}.guide-copy h3:focus{outline:none}
+.guide-copy p{font-size:14px;line-height:1.85;margin:0 0 14px;word-break:keep-all;overflow-wrap:anywhere}
+.guide-copy .guide-location{font-size:11px;color:var(--accent);font-weight:600}.guide-copy .guide-effect{padding:14px;background:var(--surface2);border-left:3px solid var(--accent);font-size:12.5px}
+.guide-demo{min-width:0;padding:16px;background:var(--surface2);border:1px solid var(--line);border-radius:12px;align-self:start}
+.guide-demo-head{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px}.guide-demo-head button{font-size:10px;padding:5px}
+.guide-choices{display:flex;flex-wrap:wrap;gap:6px;margin:14px 0}.guide-choices button{font-size:11px;white-space:normal}
+.guide-choices button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--surface)}
+.guide-demo svg{width:100%;display:block}.guide-vectors line{stroke-dasharray:5 3;animation:guide-force 1s linear infinite;transition:y1 .35s}
+@keyframes guide-force{to{stroke-dashoffset:-16}}
+.guide-paused .guide-vectors line{animation-play-state:paused}.guide-demo-results{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding-top:12px;border-top:1px solid var(--line)}
+.guide-demo-results span{display:block;color:var(--ink3);font-size:11px}.guide-demo-results b{font-family:var(--mono);font-size:17px}.guide-demo-results small{font-size:10px;font-weight:400}
+.guide-demo-results p{grid-column:1/-1;margin:0;font-size:10px;color:var(--ink2)}.guide-example-note{font-size:10px;line-height:1.6;color:var(--ink3);margin:12px 0 0}
+.guide-foot{border-top:1px solid var(--line);padding:14px 24px}.guide-foot>span{font-family:var(--mono);font-size:12px;color:var(--ink3)}.guide-foot>div{display:flex;gap:8px}.guide .guide-primary{background:var(--accent);border-color:var(--accent);color:var(--surface);min-width:90px}.guide button:disabled{opacity:.45;cursor:default}
+@media(max-width:600px){.guide-head{padding:14px 16px;gap:8px}.guide-head h2{font-size:16px}.guide-head .eyebrow{font-size:9px}.guide-body{grid-template-columns:1fr;gap:12px;padding:16px;max-height:calc(100dvh - 185px)}.guide-copy h3{font-size:19px}.guide-copy p{font-size:13px;margin-bottom:10px}.guide-copy .guide-effect{font-size:12px}.guide-demo{padding:12px}.guide-demo svg{max-height:120px}.guide-foot{padding:12px 16px}}
+@media(prefers-reduced-motion:reduce){.guide-progress span,.guide-vectors line{transition:none}}
 </style>

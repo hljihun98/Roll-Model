@@ -462,9 +462,9 @@ function wheelBody(g, CX, cy, Rs, bs, FY, c, phase, R, sc){
 
 function figSection(c){
   const nw=NARROW();
-  const W  = nw?470:920,  H = nw?680:470;
-  const PW = nw?W:520,    FY= nw?232:298, DEP = nw?96:118;
-  const DX = nw?12:548,   DY= nw?388:18,  DW  = nw?W-24:W-560, DH = nw?284:444;
+  const W  = nw?470:920,  H = nw?608:400;
+  const PW = nw?W:520,    FY= nw?220:270, DEP = nw?48:59;
+  const DX = nw?12:548,   DY= nw?310:18,  DW  = nw?W-24:W-560;
   const svg=sv('svg',{viewBox:`0 0 ${W} ${H}`,role:'img'});
   svg.setAttribute('aria-label',
     `접촉 단면. 바퀴 직경 ${S.D} mm, 접촉 전폭 ${fmt(2*c.r.b,2)} mm, 최대 접촉압 ${fmt(c.r.pmax,2)} MPa`);
@@ -492,6 +492,7 @@ function figSection(c){
   txt(g,12,36,`D ${S.D} × L ${S.L} mm${S.wT>0?` · 트레드 ${S.wT} mm`:' · 솔리드'}`);
   txt(g,PW-12,20,`F_pk ${fmt(c.Fpk,0)} N`,{anchor:'end'});
   txt(g,PW-12,36,`b/R ${fmt(c.bR,3)}`,{anchor:'end',fill:SC(c.G.bR.s)});
+  txt(g,12,54,`폭당 하중 F_pk/L_eff = ${fmt(c.Fpk/c.Le,1)} N/mm`);
   txt(g,12,FY+DEP+18,`${c.FN.n} · 콘크리트 f_ck ${S.fck} MPa`);
   if(pen*s>3) txt(g,CX-bs-10,FY-10,`δ ${fmt(pen,2)}`,{anchor:'end',fill:'var(--warn)'});
   /* 축척 막대 — 바퀴 크기 변화를 눈으로 비교할 기준 */
@@ -512,11 +513,12 @@ function figSection(c){
   /* ───────── 패널 B : 상세 A (확대 접촉부) ───────── */
   const ph   = nw?112:124;
   const pBase= DY+52+ph;
-  const fBot = DY+DH-40;
+  // 바닥 텍스처를 기존 높이의 절반으로 줄이고 압력·도막 관계를 우선 배치.
+  const floorDepth=nw?40:114, fBot=pBase+floorDepth;
   const cw   = DW*0.62, cx0 = DX+(DW-cw)/2;
   const dscale = cw/(2*Math.max(b,1e-6)), mag = dscale/s;
-  const dcap = S.fT>0 ? clamp(S.fT*dscale, 4, (fBot-pBase)*0.5) : 0;
-  txt(g,DX,DY+14,'상세 A — 접촉부 확대',{cls:'svg-lbl'});
+  const dcap = S.fT>0 ? clamp(S.fT*dscale, 4, floorDepth*0.5) : 0;
+  txt(g,DX,DY+14,'상세 A — 도막을 누르는 압력',{cls:'svg-lbl'});
   txt(g,DX+DW,DY+14,`${mag>=1?fmt(mag,0)+':1':'1:'+fmt(1/mag,0)}`,{anchor:'end'});
   /* 변형된 트레드 실루엣 (압력분포 뒤) */
   const treadTop=DY+22, rise=Math.min(66,(pBase-treadTop)*0.5);
@@ -526,38 +528,57 @@ function figSection(c){
     fill:c.WN.c,'fill-opacity':.22,stroke:'none'}));
   g.append(sv('path',{d:prof,fill:'none',stroke:c.WN.c,'stroke-width':1.5}));
   /* 바닥 */
-  g.append(sv('rect',{x:DX,y:pBase,width:DW,height:fBot-pBase,fill:'url(#gConc)'}));
+  g.append(sv('rect',{x:DX,y:pBase,width:DW,height:floorDepth,fill:'url(#gConc)','data-detail-floor':''}));
+  const groundClip=sv('clipPath',{id:'detailGroundClip'});
+  groundClip.append(sv('rect',{x:DX,y:pBase+dcap,width:DW,height:floorDepth-dcap}));
+  svg.querySelector('defs').append(groundClip);
+  const aggregate=sv('g',{'clip-path':'url(#detailGroundClip)'});g.append(aggregate);
   const r2=rng(77001);
-  for(let i=0;i<40;i++){const ax=DX+r2()*DW, ay=pBase+dcap+5+r2()*Math.max(fBot-pBase-dcap-8,1);
+  for(let i=0;i<20;i++){const ax=DX+r2()*DW, ay=pBase+dcap+5+r2()*Math.max(fBot-pBase-dcap-8,1);
     const rr=2+r2()*9;
-    g.append(sv('ellipse',{cx:ax,cy:ay,rx:rr,ry:rr*(.5+r2()*.6),transform:`rotate(${r2()*180} ${ax} ${ay})`,
-      fill:r2()>.5?'#9EA39B':'#7C817A',opacity:.28+r2()*.34}));}
+    aggregate.append(sv('ellipse',{cx:ax,cy:ay,rx:rr,ry:rr*(.5+r2()*.6),transform:`rotate(${r2()*180} ${ax} ${ay})`,
+      fill:r2()>.5?'#9EA39B':'#7C817A',opacity:.18+r2()*.2}));}
   if(dcap>0){ g.append(sv('rect',{x:DX,y:pBase,width:DW,height:dcap,fill:'url(#gCoat)'}));
     g.append(sv('rect',{x:DX,y:pBase,width:DW,height:Math.min(dcap*.3,2.5),fill:'#fff',opacity:.5}));
     g.append(sv('line',{x1:DX,y1:pBase+dcap,x2:DX+DW,y2:pBase+dcap,stroke:'#000',opacity:.3,'stroke-width':1}));
-    txt(g,DX+DW-4,pBase+dcap+14,`도막 ${S.fT} mm · 전달압 ${fmt(c.pSub,2)} MPa`,{anchor:'end'}); }
+    txt(g,DX+DW-4,pBase+dcap+14,`도막 ${S.fT} mm`,{anchor:'end',fill:'var(--ink)'}); }
   g.append(sv('line',{x1:DX,y1:pBase,x2:DX+DW,y2:pBase,stroke:'var(--ink)','stroke-width':1.5}));
   /* 압력분포 */
-  const yTop=Math.max(c.r.pmax, c.allow.surf)*1.06, kP=ph/Math.max(yTop,1e-6);
-  const hMax=c.r.pmax*kP;
+  // L 조절에 따라 자동 정규화하지 않는다. 같은 재료·SF에서 px/MPa 고정.
+  // 축 상한을 넘는 값은 그래프만 잘라 표시하고 실제 수치를 그대로 명시한다.
+  const nominalAllow=Math.min(S.wPa,S.fT>0?S.fComp*S.fRed:concreteBearing(S))/S.SF;
+  const pressureCap=nominalAllow*1.25, kP=ph/pressureCap;
+  const pressure=DISP.pmax, shownAvg=pressure/(c.line?4/Math.PI:1.5);
+  const pressureHeight=p=>Math.min(p,pressureCap)*kP;
+  const hMax=pressureHeight(pressure), clipped=pressure>pressureCap;
   let d=`M${cx0} ${pBase}`;
   for(let i=0;i<=110;i++){const u=-1+2*i/110;
-    d+=`L${cx0+(u+1)/2*cw} ${pBase-hMax*Math.sqrt(Math.max(1-u*u,0))}`;}
-  g.append(sv('path',{d:d+'Z',fill:'url(#gPress)',stroke:'var(--bad)','stroke-width':1.7}));
+    d+=`L${cx0+(u+1)/2*cw} ${pBase-pressureHeight(pressure*Math.sqrt(Math.max(1-u*u,0)))}`;}
+  g.append(sv('path',{d:d+'Z',fill:'url(#gPress)','fill-opacity':.55,stroke:'var(--bad)','stroke-width':1.7}));
   g.append(sv('rect',{x:cx0,y:pBase-2.6,width:cw,height:5.2,fill:'var(--bad)',rx:2}));
-  for(let i=1;i<=5;i++){const ax=cx0+cw*i/6, len=Math.min(dcap>0?dcap-2:10,11);
-    if(len>3){g.append(sv('line',{x1:ax,y1:pBase+2,x2:ax,y2:pBase+2+len,stroke:'var(--bad)','stroke-width':1,opacity:.6}),
-      arrow(ax,pBase+2+len,0,1,'var(--bad)'));}}
-  const avgY=pBase-c.r.pavg*kP;
+  const arrows=sv('g',{'data-pressure-arrows':'','data-scale':kP,'data-cap':pressureCap});g.append(arrows);
+  for(let i=1;i<=7;i++){
+    const u=-1+i/4, ax=cx0+(u+1)*cw/2;
+    const localPressure=pressure*Math.sqrt(Math.max(1-u*u,0)), len=pressureHeight(localPressure);
+    if(len<=0)continue;
+    arrows.append(sv('line',{x1:ax,y1:pBase-len,x2:ax,y2:pBase,stroke:'var(--bad)','stroke-width':1.6,
+      'data-pressure':localPressure,'data-position':u}));
+    // 작은 압력에서도 화살촉이 화살표 길이를 넘지 않도록 한다.
+    const head=Math.min(7,len), half=Math.min(3,len*.43);
+    arrows.append(sv('path',{d:`M${ax} ${pBase}L${ax-half} ${pBase-head}L${ax+half} ${pBase-head}Z`,fill:'var(--bad)'}));
+  }
+  const avgY=pBase-pressureHeight(shownAvg);
   g.append(sv('line',{x1:cx0,y1:avgY,x2:cx0+cw,y2:avgY,stroke:'var(--ink2)','stroke-width':1,'stroke-dasharray':'5 4'}));
-  txt(g,cx0+cw+6,avgY+4,`p_avg ${fmt(c.r.pavg,2)}`);
-  txt(g,cx0+cw/2,pBase-hMax-9,`p_max ${fmt(c.r.pmax,2)} MPa`,{anchor:'middle',fill:'var(--bad)'});
-  const aly=pBase-c.allow.surf*kP;
+  txt(g,DX+DW-4,avgY-5,`p_avg ${fmt(shownAvg,2)}`,{anchor:'end'});
+  txt(g,cx0+cw/2,pBase-hMax-9,`p_max ${fmt(pressure,2)} MPa${clipped?' · 상단 초과':''}`,{anchor:'middle',fill:'var(--bad)'});
+  const aly=pBase-pressureHeight(c.allow.surf);
   if(aly>DY+30 && aly<pBase-6){
     g.append(sv('line',{x1:DX+4,y1:aly,x2:DX+DW-4,y2:aly,stroke:'var(--ok)','stroke-width':1.5,'stroke-dasharray':'7 4'}));
     txt(g,DX+6,aly-5,`허용 ${fmt(c.allow.surf,1)} MPa`,{fill:'var(--ok)'}); }
   hdim(g,cx0,cx0+cw,fBot+22,`2b = ${fmt(2*b,2)} mm`,{ext:22});
-  txt(g,DX,DY+DH,`p(x,0) = p_max·√(1 − (x/b)²) · p_max / p_avg = ${c.line?'4/π':'3/2'}`);
+  txt(g,DX,fBot+47,`표면 ${fmt(pressure,2)} → 기재 ${fmt(subPressure(pressure,S.fT,b),2)} MPa`,{cls:'svg-lbl',fill:'var(--ink)'});
+  txt(g,DX,fBot+64,`화살표 길이 ∝ 면압 · 표시 상한 ${fmt(pressureCap,1)} MPa`);
+  txt(g,DX,fBot+81,`p(x,0) = p_max·√(1 − (x/b)²)${c.line?'':' · 타원 후속해는 참고값'}`);
 
   $('#figTag').textContent=`단면 ${s>=1?fmt(s,1)+':1':'1:'+fmt(1/s,1)} · 상세 A ${mag>=1?fmt(mag,0)+':1':'1:'+fmt(1/mag,0)}`;
   $('#figLegend').innerHTML=[

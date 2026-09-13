@@ -342,6 +342,28 @@ body[data-mode="pro"] .pro-only.field{display:grid}
 body[data-mode="pro"] .pro-only.frow{display:flex}
 .easy-only{display:block}
 body[data-mode="pro"] .easy-only{display:none}
+/* 처음 사용자 안내 */
+.guide{width:min(820px,calc(100vw - 24px));max-height:calc(100dvh - 24px);padding:0;border:1px solid var(--line2);border-radius:16px;background:var(--surface);color:var(--ink);box-shadow:0 24px 80px color-mix(in srgb,var(--ink) 25%,transparent);overflow:hidden}
+.guide::backdrop{background:color-mix(in srgb,var(--ink) 80%,transparent);backdrop-filter:blur(3px)}
+.guide-head,.guide-foot{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:20px 24px}
+.guide-head h2{font-size:19px;line-height:1.4;margin:5px 0 0}.guide-head button{flex-shrink:0}
+.guide-progress{height:3px;background:var(--line)}.guide-progress span{display:block;height:100%;background:var(--accent);transition:width .25s}
+.guide-body{display:grid;grid-template-columns:1fr 1fr;gap:26px;padding:24px;max-height:calc(100dvh - 220px);overflow:auto;overscroll-behavior:contain}
+.guide-copy h3{font-size:22px;line-height:1.45;margin:10px 0 14px;letter-spacing:-.04em}.guide-copy h3:focus{outline:none}
+.guide-copy p{font-size:14px;line-height:1.85;margin:0 0 14px;word-break:keep-all;overflow-wrap:anywhere}
+.guide-copy .guide-location{font-size:11px;color:var(--accent);font-weight:600}.guide-copy .guide-effect{padding:14px;background:var(--surface2);border-left:3px solid var(--accent);font-size:12.5px}
+.guide-demo{min-width:0;padding:16px;background:var(--surface2);border:1px solid var(--line);border-radius:12px;align-self:start}
+.guide-demo-head{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px}.guide-demo-head button{font-size:10px;padding:5px}
+.guide-choices{display:flex;flex-wrap:wrap;gap:6px;margin:14px 0}.guide-choices button{font-size:11px;white-space:normal}
+.guide-choices button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--surface)}
+.guide-demo svg{width:100%;display:block}.guide-vectors line{stroke-dasharray:5 3;animation:guide-force 1s linear infinite;transition:y1 .35s}
+@keyframes guide-force{to{stroke-dashoffset:-16}}
+.guide-paused .guide-vectors line{animation-play-state:paused}.guide-demo-results{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding-top:12px;border-top:1px solid var(--line)}
+.guide-demo-results span{display:block;color:var(--ink3);font-size:11px}.guide-demo-results b{font-family:var(--mono);font-size:17px}.guide-demo-results small{font-size:10px;font-weight:400}
+.guide-demo-results p{grid-column:1/-1;margin:0;font-size:10px;color:var(--ink2)}.guide-example-note{font-size:10px;line-height:1.6;color:var(--ink3);margin:12px 0 0}
+.guide-foot{border-top:1px solid var(--line);padding:14px 24px}.guide-foot>span{font-family:var(--mono);font-size:12px;color:var(--ink3)}.guide-foot>div{display:flex;gap:8px}.guide .guide-primary{background:var(--accent);border-color:var(--accent);color:var(--surface);min-width:90px}.guide button:disabled{opacity:.45;cursor:default}
+@media(max-width:600px){.guide-head{padding:14px 16px;gap:8px}.guide-head h2{font-size:16px}.guide-head .eyebrow{font-size:9px}.guide-body{grid-template-columns:1fr;gap:12px;padding:16px;max-height:calc(100dvh - 185px)}.guide-copy h3{font-size:19px}.guide-copy p{font-size:13px;margin-bottom:10px}.guide-copy .guide-effect{font-size:12px}.guide-demo{padding:12px}.guide-demo svg{max-height:120px}.guide-foot{padding:12px 16px}}
+@media(prefers-reduced-motion:reduce){.guide-progress span,.guide-vectors line{transition:none}}
 </style>
 </head>
 <body>
@@ -355,6 +377,7 @@ body[data-mode="pro"] .easy-only{display:none}
   </div>
   <select id="scen" aria-label="시나리오"></select>
   <span class="sp"></span>
+  <button class="tbtn" id="btnGuide" aria-haspopup="dialog">시작 가이드</button>
   <button class="tbtn" id="btnExpand">근거 모두 열기</button>
   <button class="tbtn" id="btnJson" data-save>설정 저장</button>
   <button class="tbtn" id="btnImp">불러오기</button>
@@ -1601,9 +1624,9 @@ function wheelBody(g, CX, cy, Rs, bs, FY, c, phase, R, sc){
 
 function figSection(c){
   const nw=NARROW();
-  const W  = nw?470:920,  H = nw?680:470;
-  const PW = nw?W:520,    FY= nw?232:298, DEP = nw?96:118;
-  const DX = nw?12:548,   DY= nw?388:18,  DW  = nw?W-24:W-560, DH = nw?284:444;
+  const W  = nw?470:920,  H = nw?608:400;
+  const PW = nw?W:520,    FY= nw?220:270, DEP = nw?48:59;
+  const DX = nw?12:548,   DY= nw?310:18,  DW  = nw?W-24:W-560;
   const svg=sv('svg',{viewBox:`0 0 ${W} ${H}`,role:'img'});
   svg.setAttribute('aria-label',
     `접촉 단면. 바퀴 직경 ${S.D} mm, 접촉 전폭 ${fmt(2*c.r.b,2)} mm, 최대 접촉압 ${fmt(c.r.pmax,2)} MPa`);
@@ -1631,6 +1654,7 @@ function figSection(c){
   txt(g,12,36,`D ${S.D} × L ${S.L} mm${S.wT>0?` · 트레드 ${S.wT} mm`:' · 솔리드'}`);
   txt(g,PW-12,20,`F_pk ${fmt(c.Fpk,0)} N`,{anchor:'end'});
   txt(g,PW-12,36,`b/R ${fmt(c.bR,3)}`,{anchor:'end',fill:SC(c.G.bR.s)});
+  txt(g,12,54,`폭당 하중 F_pk/L_eff = ${fmt(c.Fpk/c.Le,1)} N/mm`);
   txt(g,12,FY+DEP+18,`${c.FN.n} · 콘크리트 f_ck ${S.fck} MPa`);
   if(pen*s>3) txt(g,CX-bs-10,FY-10,`δ ${fmt(pen,2)}`,{anchor:'end',fill:'var(--warn)'});
   /* 축척 막대 — 바퀴 크기 변화를 눈으로 비교할 기준 */
@@ -1651,11 +1675,12 @@ function figSection(c){
   /* ───────── 패널 B : 상세 A (확대 접촉부) ───────── */
   const ph   = nw?112:124;
   const pBase= DY+52+ph;
-  const fBot = DY+DH-40;
+  // 바닥 텍스처를 기존 높이의 절반으로 줄이고 압력·도막 관계를 우선 배치.
+  const floorDepth=nw?40:114, fBot=pBase+floorDepth;
   const cw   = DW*0.62, cx0 = DX+(DW-cw)/2;
   const dscale = cw/(2*Math.max(b,1e-6)), mag = dscale/s;
-  const dcap = S.fT>0 ? clamp(S.fT*dscale, 4, (fBot-pBase)*0.5) : 0;
-  txt(g,DX,DY+14,'상세 A — 접촉부 확대',{cls:'svg-lbl'});
+  const dcap = S.fT>0 ? clamp(S.fT*dscale, 4, floorDepth*0.5) : 0;
+  txt(g,DX,DY+14,'상세 A — 도막을 누르는 압력',{cls:'svg-lbl'});
   txt(g,DX+DW,DY+14,`${mag>=1?fmt(mag,0)+':1':'1:'+fmt(1/mag,0)}`,{anchor:'end'});
   /* 변형된 트레드 실루엣 (압력분포 뒤) */
   const treadTop=DY+22, rise=Math.min(66,(pBase-treadTop)*0.5);
@@ -1665,38 +1690,57 @@ function figSection(c){
     fill:c.WN.c,'fill-opacity':.22,stroke:'none'}));
   g.append(sv('path',{d:prof,fill:'none',stroke:c.WN.c,'stroke-width':1.5}));
   /* 바닥 */
-  g.append(sv('rect',{x:DX,y:pBase,width:DW,height:fBot-pBase,fill:'url(#gConc)'}));
+  g.append(sv('rect',{x:DX,y:pBase,width:DW,height:floorDepth,fill:'url(#gConc)','data-detail-floor':''}));
+  const groundClip=sv('clipPath',{id:'detailGroundClip'});
+  groundClip.append(sv('rect',{x:DX,y:pBase+dcap,width:DW,height:floorDepth-dcap}));
+  svg.querySelector('defs').append(groundClip);
+  const aggregate=sv('g',{'clip-path':'url(#detailGroundClip)'});g.append(aggregate);
   const r2=rng(77001);
-  for(let i=0;i<40;i++){const ax=DX+r2()*DW, ay=pBase+dcap+5+r2()*Math.max(fBot-pBase-dcap-8,1);
+  for(let i=0;i<20;i++){const ax=DX+r2()*DW, ay=pBase+dcap+5+r2()*Math.max(fBot-pBase-dcap-8,1);
     const rr=2+r2()*9;
-    g.append(sv('ellipse',{cx:ax,cy:ay,rx:rr,ry:rr*(.5+r2()*.6),transform:`rotate(${r2()*180} ${ax} ${ay})`,
-      fill:r2()>.5?'#9EA39B':'#7C817A',opacity:.28+r2()*.34}));}
+    aggregate.append(sv('ellipse',{cx:ax,cy:ay,rx:rr,ry:rr*(.5+r2()*.6),transform:`rotate(${r2()*180} ${ax} ${ay})`,
+      fill:r2()>.5?'#9EA39B':'#7C817A',opacity:.18+r2()*.2}));}
   if(dcap>0){ g.append(sv('rect',{x:DX,y:pBase,width:DW,height:dcap,fill:'url(#gCoat)'}));
     g.append(sv('rect',{x:DX,y:pBase,width:DW,height:Math.min(dcap*.3,2.5),fill:'#fff',opacity:.5}));
     g.append(sv('line',{x1:DX,y1:pBase+dcap,x2:DX+DW,y2:pBase+dcap,stroke:'#000',opacity:.3,'stroke-width':1}));
-    txt(g,DX+DW-4,pBase+dcap+14,`도막 ${S.fT} mm · 전달압 ${fmt(c.pSub,2)} MPa`,{anchor:'end'}); }
+    txt(g,DX+DW-4,pBase+dcap+14,`도막 ${S.fT} mm`,{anchor:'end',fill:'var(--ink)'}); }
   g.append(sv('line',{x1:DX,y1:pBase,x2:DX+DW,y2:pBase,stroke:'var(--ink)','stroke-width':1.5}));
   /* 압력분포 */
-  const yTop=Math.max(c.r.pmax, c.allow.surf)*1.06, kP=ph/Math.max(yTop,1e-6);
-  const hMax=c.r.pmax*kP;
+  // L 조절에 따라 자동 정규화하지 않는다. 같은 재료·SF에서 px/MPa 고정.
+  // 축 상한을 넘는 값은 그래프만 잘라 표시하고 실제 수치를 그대로 명시한다.
+  const nominalAllow=Math.min(S.wPa,S.fT>0?S.fComp*S.fRed:concreteBearing(S))/S.SF;
+  const pressureCap=nominalAllow*1.25, kP=ph/pressureCap;
+  const pressure=DISP.pmax, shownAvg=pressure/(c.line?4/Math.PI:1.5);
+  const pressureHeight=p=>Math.min(p,pressureCap)*kP;
+  const hMax=pressureHeight(pressure), clipped=pressure>pressureCap;
   let d=`M${cx0} ${pBase}`;
   for(let i=0;i<=110;i++){const u=-1+2*i/110;
-    d+=`L${cx0+(u+1)/2*cw} ${pBase-hMax*Math.sqrt(Math.max(1-u*u,0))}`;}
-  g.append(sv('path',{d:d+'Z',fill:'url(#gPress)',stroke:'var(--bad)','stroke-width':1.7}));
+    d+=`L${cx0+(u+1)/2*cw} ${pBase-pressureHeight(pressure*Math.sqrt(Math.max(1-u*u,0)))}`;}
+  g.append(sv('path',{d:d+'Z',fill:'url(#gPress)','fill-opacity':.55,stroke:'var(--bad)','stroke-width':1.7}));
   g.append(sv('rect',{x:cx0,y:pBase-2.6,width:cw,height:5.2,fill:'var(--bad)',rx:2}));
-  for(let i=1;i<=5;i++){const ax=cx0+cw*i/6, len=Math.min(dcap>0?dcap-2:10,11);
-    if(len>3){g.append(sv('line',{x1:ax,y1:pBase+2,x2:ax,y2:pBase+2+len,stroke:'var(--bad)','stroke-width':1,opacity:.6}),
-      arrow(ax,pBase+2+len,0,1,'var(--bad)'));}}
-  const avgY=pBase-c.r.pavg*kP;
+  const arrows=sv('g',{'data-pressure-arrows':'','data-scale':kP,'data-cap':pressureCap});g.append(arrows);
+  for(let i=1;i<=7;i++){
+    const u=-1+i/4, ax=cx0+(u+1)*cw/2;
+    const localPressure=pressure*Math.sqrt(Math.max(1-u*u,0)), len=pressureHeight(localPressure);
+    if(len<=0)continue;
+    arrows.append(sv('line',{x1:ax,y1:pBase-len,x2:ax,y2:pBase,stroke:'var(--bad)','stroke-width':1.6,
+      'data-pressure':localPressure,'data-position':u}));
+    // 작은 압력에서도 화살촉이 화살표 길이를 넘지 않도록 한다.
+    const head=Math.min(7,len), half=Math.min(3,len*.43);
+    arrows.append(sv('path',{d:`M${ax} ${pBase}L${ax-half} ${pBase-head}L${ax+half} ${pBase-head}Z`,fill:'var(--bad)'}));
+  }
+  const avgY=pBase-pressureHeight(shownAvg);
   g.append(sv('line',{x1:cx0,y1:avgY,x2:cx0+cw,y2:avgY,stroke:'var(--ink2)','stroke-width':1,'stroke-dasharray':'5 4'}));
-  txt(g,cx0+cw+6,avgY+4,`p_avg ${fmt(c.r.pavg,2)}`);
-  txt(g,cx0+cw/2,pBase-hMax-9,`p_max ${fmt(c.r.pmax,2)} MPa`,{anchor:'middle',fill:'var(--bad)'});
-  const aly=pBase-c.allow.surf*kP;
+  txt(g,DX+DW-4,avgY-5,`p_avg ${fmt(shownAvg,2)}`,{anchor:'end'});
+  txt(g,cx0+cw/2,pBase-hMax-9,`p_max ${fmt(pressure,2)} MPa${clipped?' · 상단 초과':''}`,{anchor:'middle',fill:'var(--bad)'});
+  const aly=pBase-pressureHeight(c.allow.surf);
   if(aly>DY+30 && aly<pBase-6){
     g.append(sv('line',{x1:DX+4,y1:aly,x2:DX+DW-4,y2:aly,stroke:'var(--ok)','stroke-width':1.5,'stroke-dasharray':'7 4'}));
     txt(g,DX+6,aly-5,`허용 ${fmt(c.allow.surf,1)} MPa`,{fill:'var(--ok)'}); }
   hdim(g,cx0,cx0+cw,fBot+22,`2b = ${fmt(2*b,2)} mm`,{ext:22});
-  txt(g,DX,DY+DH,`p(x,0) = p_max·√(1 − (x/b)²) · p_max / p_avg = ${c.line?'4/π':'3/2'}`);
+  txt(g,DX,fBot+47,`표면 ${fmt(pressure,2)} → 기재 ${fmt(subPressure(pressure,S.fT,b),2)} MPa`,{cls:'svg-lbl',fill:'var(--ink)'});
+  txt(g,DX,fBot+64,`화살표 길이 ∝ 면압 · 표시 상한 ${fmt(pressureCap,1)} MPa`);
+  txt(g,DX,fBot+81,`p(x,0) = p_max·√(1 − (x/b)²)${c.line?'':' · 타원 후속해는 참고값'}`);
 
   $('#figTag').textContent=`단면 ${s>=1?fmt(s,1)+':1':'1:'+fmt(1/s,1)} · 상세 A ${mag>=1?fmt(mag,0)+':1':'1:'+fmt(1/mag,0)}`;
   $('#figLegend').innerHTML=[
@@ -2271,6 +2315,92 @@ buildUI();
 applyWheel(S,S.wPre); applyFloor(S,S.fPre);
 Object.assign(S,{D:DEFAULTS.D,L:DEFAULTS.L,wT:DEFAULTS.wT,fT:DEFAULTS.fT});
 setMode('easy'); setTab('chain'); syncInputs(); render();
+
+/* 첫 사용 안내. 예시는 별도 상태로 계산하며 사용자의 S는 변경하지 않는다. */
+(()=>{
+  const KEY='rollmodel.guide.v1';
+  const demoBase=()=>({...DEFAULTS,loadMode:'direct',Fdirect:6000,kSauto:false,kS:1});
+  const scenario=k=>{const s={...DEFAULTS},p=SCENARIOS[k].p;applyWheel(s,p.wPre);applyFloor(s,p.fPre);return Object.assign(s,p);};
+  const material=(wheel,floor)=>{const s=demoBase();applyWheel(s,wheel);applyFloor(s,floor);return s;};
+  const steps=[
+    {title:'먼저, 비슷한 사용 조건을 고르세요',where:'상단 → 시나리오',
+      text:'시나리오는 무게, 바퀴, 바닥, 주행 조건을 한 번에 채워 주는 출발점입니다. 가장 비슷한 예시를 고른 뒤 실제 설계값으로 바꾸세요.',
+      effect:'시나리오를 바꾸면 여러 입력이 함께 달라집니다. 비교를 시작하기 전에 하중과 바퀴 치수를 확인하세요.',
+      choices:[['승용차',()=>scenario('park_sedan')],['SUV',()=>scenario('park_suv')],['소형 AGV',()=>scenario('agv')]]},
+    {title:'바퀴 하나가 받는 하중부터 확인하세요',where:'상세 → 하중 / 상단 → 캐스터당 하중',
+      text:'총 무게를 휠 수로 나눈 값만으로는 부족할 수 있습니다. 무게중심 편심과 가감속도 반영됩니다. 알고 있는 휠 하중이 있다면 직접 입력할 수 있어요.',
+      effect:'아래 예시는 다른 조건을 고정하고 휠 하중만 바꿉니다. 하중이 커지면 접촉압과 압력 화살표가 커집니다. F_op는 주행, F_pk는 단차 통과 피크 하중입니다.',
+      choices:[['3,000 N',()=>({...demoBase(),Fdirect:3000})],['6,000 N',demoBase],['9,000 N',()=>({...demoBase(),Fdirect:9000})]]},
+    {title:'직경 D와 폭 L을 바꿔 보세요',where:'상단 또는 상세 → 직경 D / 폭 L 슬라이더',
+      text:'폭 L은 바퀴의 옆면 방향 너비이고, 직경 D는 바퀴 크기입니다. 아래는 같은 휠 하중에서 폭이나 직경만 바꾼 비교예요.',
+      effect:'이 예시에서는 폭이나 직경을 키우면 최대 접촉압이 낮아집니다. 빨간 화살표는 총힘(N)이 아니라 각 위치의 압력(MPa)을 나타냅니다. 총하중이 같아도 화살표 길이는 달라질 수 있어요.',
+      choices:[['기준 D200 · L80',demoBase],['폭만 L120',()=>({...demoBase(),L:120})],['직경만 D300',()=>({...demoBase(),D:300})]]},
+    {title:'바퀴와 바닥 재질을 함께 선택하세요',where:'상단 → 바퀴 재질 / 바닥 마감',
+      text:'단단한 바퀴는 접촉면이 작아져 압력이 커질 수 있습니다. 도막은 표면 압력뿐 아니라 아래 콘크리트에 전달되는 압력과 박리 가능성도 확인해야 해요.',
+      effect:'도막이 두껍다고 항상 안전한 것은 아닙니다. 도막·기재 비교는 근사이므로 주의 판정이 남을 수 있어요. 상세 모드의 물성은 실제 제품 데이터로 바꾸세요.',
+      choices:[['PU + 에폭시',()=>material('pu95','lin3')],['나일론 + 에폭시',()=>material('pa6','lin3')],['PU + 무도장',()=>material('pu95','bare')]]},
+    {title:'속도와 선회는 서로 다른 손상을 만듭니다',where:'상단 → 주행 속도 / 기동 조건 · 상세 → 듀티',
+      text:'속도와 주행 시간 비율(듀티)이 커지면 발열이 증가합니다. 제자리 선회는 미끄럼을 만들어 도막의 전단·표면 인장을 키울 수 있어요.',
+      effect:'느린 직진과 빠른 직진에서는 온도를, 제자리 선회에서는 표면 인장을 비교해 보세요. 이 예시는 하중을 고정해 기동 조건의 영향을 구분합니다.',
+      choices:[['직진 0.5 m/s',()=>({...demoBase(),v:.5})],['직진 2 m/s',()=>({...demoBase(),v:2})],['제자리 선회',()=>({...demoBase(),v:.3,maneuver:'spin'})]]},
+    {title:'색보다 먼저, 판정 이유를 읽으세요',where:'판정 카드 → 계산 체인 → 개선 제안',
+      text:'가능은 구현된 검사를 통과했다는 뜻이고, 주의는 별도 확인이 필요하다는 뜻입니다. 불가는 허용치 초과 또는 모델 적용 불가를 뜻해요. 각 검사 항목을 펼치면 식과 이유가 나옵니다.',
+      effect:'불가이면 개선 제안을 적용한 뒤 다시 확인하세요. 상세 모드에서 열·재료 조합·치수 역산을 보고, 설정 저장으로 조건을 남길 수 있습니다. 미지원 물리 현상은 별도 검토가 필요합니다.',
+      choices:[['가능 예시',()=>({...material('pu95','bare'),Fdirect:500,D:300,L:120,v:.3,maneuver:'manual',muMan:0})],['주의 예시',demoBase],['불가 예시',()=>({...material('pu95','coat'),maneuver:'spin'})]]}
+  ];
+  const dialog=document.createElement('dialog');dialog.id='startGuide';dialog.className='guide';
+  dialog.setAttribute('aria-labelledby','guideHeading');
+  dialog.innerHTML=`<div class="guide-head"><div><span class="eyebrow">처음 사용하는 롤모델</span><h2 id="guideHeading">입력부터 판정까지, 함께 살펴보기</h2></div><button class="tbtn" id="guideSkip">건너뛰기</button></div>
+    <div class="guide-progress" role="progressbar" aria-label="안내 진행" aria-valuemin="1" aria-valuemax="${steps.length}"><span></span></div>
+    <div class="guide-body"><div class="guide-copy"><p class="guide-location" id="guideLocation"></p><h3 id="guideTitle" tabindex="-1"></h3><p id="guideText"></p><p class="guide-effect" id="guideEffect"></p></div>
+    <section class="guide-demo" aria-label="입력 영향 체험"><div class="guide-demo-head"><b>눌러서 비교해 보세요</b><button class="tbtn" id="guideMotion"></button></div><div id="guideChoices" class="guide-choices" role="group" aria-label="예시 조건 선택"></div>
+    <svg viewBox="0 0 360 150" aria-hidden="true"><rect x="20" y="105" width="320" height="10" rx="2" fill="var(--accent)" opacity=".65"/><rect x="20" y="115" width="320" height="22" fill="var(--line2)"/><path d="M55 58Q100 102 125 105H235Q260 102 305 58" fill="none" stroke="var(--ink3)" stroke-width="2"/>
+    <g class="guide-vectors">${[-.75,-.5,0,.5,.75].map((u,i)=>`<g transform="translate(${80+i*50} 103)"><line data-demo-arrow="${u}" x1="0" y1="-70" x2="0" y2="0" stroke="var(--bad)" stroke-width="2"/><path d="M0 0L-4 -8L4 -8Z" fill="var(--bad)"/></g>`).join('')}</g><text x="180" y="18" text-anchor="middle" fill="var(--ink2)" font-size="11">도막을 누르는 압력</text></svg>
+    <div class="guide-demo-results" id="guideResults" aria-live="polite"></div><p class="guide-example-note">설명용 별도 예시입니다. 현재 입력은 바뀌지 않습니다.<br>그림의 형상·압력 길이는 예시용 축척입니다.</p></section></div>
+    <div class="guide-foot"><span id="guideCount" aria-live="polite"></span><div><button class="tbtn" id="guidePrev">이전</button><button class="tbtn guide-primary" id="guideNext">다음</button></div></div>`;
+  document.body.append(dialog);
+  const q=s=>dialog.querySelector(s);
+  let index=0,choice=0,paused=REDUCED,restoreFocus=null;
+  function motion(){dialog.classList.toggle('guide-paused',paused);q('#guideMotion').textContent=paused?'애니메이션 재생':'애니메이션 멈춤';q('#guideMotion').setAttribute('aria-pressed',String(!paused));}
+  function preview(){
+    const state=steps[index].choices[choice][1](),c=compute(state);
+    if(!c.ok){q('#guideResults').textContent=c.error;return;}
+    q('#guideChoices').querySelectorAll('button').forEach((b,i)=>b.setAttribute('aria-pressed',String(i===choice)));
+    // 모든 예시에 같은 0~20 MPa 축척. 상한 초과는 수치에 별도 표시한다.
+    q('.guide-vectors').querySelectorAll('line').forEach(line=>{
+      const u=+line.dataset.demoArrow,p=c.r.pmax*Math.sqrt(1-u*u),len=Math.min(p,20)/20*75;
+      line.setAttribute('y1',-len);
+      const head=Math.min(8,len),half=Math.min(4,len*.5);
+      line.nextElementSibling.setAttribute('d',`M0 0L-${half} -${head}L${half} -${head}Z`);
+    });
+    q('#guideResults').innerHTML=`<div><span>최대 접촉압</span><b>${fmt(c.r.pmax,2)} <small>MPa</small></b></div><div><span>트레드 온도</span><b>${fmt(c.th.T,1)} <small>°C</small></b></div><div><span>표면 인장</span><b>${fmt(c.sf.sigT,2)} <small>MPa</small></b></div><div><span>종합 판정</span><b style="color:${SC(c.worst)}">${STATUS[c.worst]}</b></div><p>${c.r.pmax>20?'그림 높이 상한 20 MPa 초과 · ':''}피크 하중 ${fmt(c.Fpk,0)} N · 접촉 전폭 ${fmt(2*c.r.b,1)} mm</p>`;
+  }
+  function renderStep(focus=false){
+    const step=steps[index];choice=0;
+    q('#guideLocation').textContent=step.where;q('#guideTitle').textContent=step.title;
+    q('#guideText').textContent=step.text;q('#guideEffect').textContent=step.effect;
+    q('#guideCount').textContent=`${index+1} / ${steps.length}`;
+    q('.guide-progress').setAttribute('aria-valuenow',index+1);q('.guide-progress span').style.width=`${(index+1)/steps.length*100}%`;
+    q('#guidePrev').disabled=index===0;q('#guideNext').textContent=index===steps.length-1?'설계 시작':'다음';
+    q('#guideChoices').replaceChildren(...step.choices.map(([label],i)=>{const b=document.createElement('button');b.className='tbtn';b.textContent=label;b.onclick=()=>{choice=i;preview();};return b;}));
+    preview();if(focus)q('#guideTitle').focus({preventScroll:true});q('.guide-body').scrollTop=0;
+  }
+  function open(){if(dialog.open)return;restoreFocus=document.activeElement;index=0;paused=REDUCED;renderStep();motion();dialog.showModal();q('#guideNext').focus();}
+  function close(){try{localStorage.setItem(KEY,'done');}catch{}dialog.close();(restoreFocus&&restoreFocus!==document.body?restoreFocus:$('#btnGuide')).focus({preventScroll:true});}
+  q('#guideSkip').onclick=close;q('#guidePrev').onclick=()=>{if(index>0){index--;renderStep(true);}};
+  q('#guideNext').onclick=()=>{if(index===steps.length-1)close();else{index++;renderStep(true);}};
+  q('#guideMotion').onclick=()=>{paused=!paused;motion();};
+  dialog.addEventListener('cancel',event=>{event.preventDefault();close();});
+  dialog.addEventListener('keydown',event=>{
+    if(event.key!=='Tab')return;
+    const buttons=[...dialog.querySelectorAll('button:not(:disabled)')],first=buttons[0],last=buttons[buttons.length-1];
+    if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}
+    else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}
+  });
+  $('#btnGuide').onclick=open;
+  let seen=false;try{seen=localStorage.getItem(KEY)==='done';}catch{}
+  if(!seen)open();
+})();
 
 </script>
 </body>

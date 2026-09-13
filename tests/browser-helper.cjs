@@ -13,7 +13,9 @@ async function withBrowser(run){
   }
 }
 async function preparePage(browser,options={}){
-  const page=await browser.newPage({viewport:{width:1400,height:1000},reducedMotion:'reduce',...options});
+  const {showGuide=false,...pageOptions}=options;
+  const page=await browser.newPage({viewport:{width:1400,height:1000},reducedMotion:'reduce',...pageOptions});
+  if(!showGuide)await page.addInitScript(()=>{try{localStorage.setItem('rollmodel.guide.v1','done');}catch{}});
   const errors=[];
   page.on('pageerror',e=>errors.push(e.message));
   page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});

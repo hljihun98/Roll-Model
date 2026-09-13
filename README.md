@@ -4,6 +4,8 @@
 
 **웹 실행:** [hljihun98.github.io/Roll-Model](https://hljihun98.github.io/Roll-Model/)
 
+처음 방문하면 **시작 가이드**가 열립니다. 6단계의 설명과 비교 예시로 입력이 접촉압·발열·판정에 미치는 영향을 살펴볼 수 있습니다. **건너뛰기 / Esc**로 닫고 상단 **시작 가이드**에서 다시 볼 수 있습니다. 가이드의 예시는 현재 설계 입력을 변경하지 않습니다. 가이드 종료 여부만 브라우저에 저장하며, 저장 기능이 차단돼도 계산은 동작합니다.
+
 **바로 실행:** [index.html](index.html)을 내려받아 브라우저에서 여십시오. GitHub 저장소의 파일 미리보기에서는 프로그램이 실행되지 않으므로, 웹에서 사용하려면 아래 GitHub Pages를 설정합니다.
 
 ## GitHub Pages로 실행
@@ -51,6 +53,7 @@ src/
   31_compute.js              판정·개선안·열 보정
   40_body.html               마크업
   50_ui.js                   입력·도면·표·저장
+  60_guide.js                첫 사용자 안내·독립 비교 예시
 scripts/
   build.cjs                  Node 내장 기능으로 HTML 결합
   serve.cjs                  로컬 미리보기 서버

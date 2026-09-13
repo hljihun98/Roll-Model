@@ -9,6 +9,19 @@ withBrowser(async(browser,url)=>{
   assert.deepEqual(await p.evaluate(()=>[C.kSeff,C.Fop,C.Fpk]),[1,6000,6000]);
   console.log('PASS direct load / automatic impact');
 
+  const pressureArrow=()=>p.evaluate(()=>{
+    const line=document.querySelector('[data-pressure-arrows] [data-position="0"]');
+    return {length:+line.getAttribute('y2')-+line.getAttribute('y1'),pressure:+line.dataset.pressure,
+      scale:+line.parentNode.dataset.scale,F:C.Fpk,p:C.r.pmax,depth:+document.querySelector('[data-detail-floor]').getAttribute('height')};
+  });
+  await p.fill('#Lr','40');const narrow=await pressureArrow();
+  await p.fill('#Lr','120');const wide=await pressureArrow();
+  assert.equal(wide.F,narrow.F);assert.equal(wide.scale,narrow.scale);
+  assert.ok(wide.pressure<narrow.pressure);assert.ok(wide.length<narrow.length);
+  assert.ok(Math.abs(wide.length/narrow.length-wide.pressure/narrow.pressure)<1e-8);
+  assert.equal(wide.depth,114);assert.equal(wide.pressure,wide.p);
+  console.log('PASS width changes pressure arrows at fixed load and scale; substrate height halved');
+
   await p.selectOption('#sWPre','pa6');await p.fill('#sD','150');await p.fill('#sL','60');await p.fill('#crown','120');
   const flat=await p.evaluate(()=>({p:C.r.pmax,kind:C.r.kind,expr:C.G.pSurf.rat.expr,model:C.G.model.s}));
   assert.equal(flat.kind,'ellipse');assert.equal(flat.model,'bad');assert.match(flat.expr,/3F/);
