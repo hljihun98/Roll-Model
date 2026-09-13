@@ -4,8 +4,13 @@
 const $  = s=>document.querySelector(s);
 const $$ = s=>[...document.querySelectorAll(s)];
 const NS = 'http://www.w3.org/2000/svg';
-const fmt=(v,d=2)=>(v==null||!isFinite(v))?(v===Infinity?'∞':'—'):
-  Number(v).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
+const numberFormats=new Map();
+const fmt=(v,d=2)=>{
+  if(v==null||!isFinite(v))return v===Infinity?'∞':'—';
+  if(d>20)return Number(v).toExponential(3);
+  if(!numberFormats.has(d))numberFormats.set(d,new Intl.NumberFormat('en-US',{minimumFractionDigits:d,maximumFractionDigits:d}));
+  return numberFormats.get(d).format(Number(v));
+};
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const STATUS={ok:'가능',warn:'주의',bad:'불가'};
 
@@ -189,7 +194,7 @@ function renderVerdict(c){
               bad:'이 사양으로는 사용할 수 없습니다'}[c.worst];
   const dr=c.driver;
   let lead;
-  if(c.worst==='ok') lead=`10개 검사 항목이 모두 허용치 안에 있습니다. 접촉 반폭 <b>${fmt(c.r.b,2)} mm</b>, 최대 접촉압 <b>${fmt(c.r.pmax,2)} MPa</b> (허용 ${fmt(c.allow.surf,1)}), 트레드 온도 <b>${fmt(c.th.T,0)} °C</b>.`;
+  if(c.worst==='ok') lead=`${c.gates.length}개 검사 항목이 모두 허용치 안에 있습니다. 접촉 반폭 <b>${fmt(c.r.b,2)} mm</b>, 최대 접촉압 <b>${fmt(c.r.pmax,2)} MPa</b> (허용 ${fmt(c.allow.surf,1)}), 트레드 온도 <b>${fmt(c.th.T,0)} °C</b>.`;
   else lead=`결정 요인은 <b>${esc(dr.title)}</b> — ${esc(dr.why)}`;
   const others=c.failing.slice(1,4).map(g=>`${g.sym}`).join(' · ');
   const sub = c.failing.length>1 ? `<br><span style="color:var(--ink3)">함께 걸린 항목: ${esc(others)}${c.failing.length>4?` 외 ${c.failing.length-4}개`:''}</span>` : '';
@@ -728,7 +733,7 @@ function figSurf(c){
   $('#surfLegend').innerHTML=[
     ['var(--accent)',`σ_x(x) = −p(x) + 2μ_util·p₀·(x/b) — 마찰이 실린 표면 응력`],
     [st,`후단 인장 ${fmt(2*mu*p0,2)} MPa (${c.MU.n}, μ_util ${fmt(mu,3)})`],
-    ['var(--ok)',`허용 ${fmt(lim,2)} MPa — ${(!c.bare&&c.cTb>1)?'도막 인장강도':'콘크리트 f_ctm = 0.30·f_ck^⅔'} / 안전율 ${S.SF}`],
+    ['var(--ok)',`허용 ${fmt(lim,2)} MPa — ${c.allow.tenGov} 지배 / 안전율 ${S.SF} · 콘크리트 f_ctm = ${concreteTensExpr(S)}`],
   ].map(([col,t])=>`<span><i style="background:${col}"></i>${esc(t)}</span>`).join('');
   return svg;
 }
@@ -743,11 +748,13 @@ function figThermal(c){
     const cc=computeCore({...S,v,kSauto:false,kS:1,loadMode:'direct',Fdirect:c.Fop});
     pts.push([v, cc.ok? cc.Fth/S.g : NaN]);
   }
-  const pLim = (()=>{ // 면압 한계 하중 (열과 무관)
+  let pressureCapped=false;
+  const pLim = (()=>{ // 현재 속도·온도저감·고정 충격계수에서의 참고값
     let lo=0, hi=c.Fop*20;
     for(let i=0;i<40;i++){ const mid=(lo+hi)/2;
-      const cc=computeCore({...S,loadMode:'direct',Fdirect:mid,kSauto:false,kS:Math.max(c.kSeff,1),v:0});
+      const cc=computeCore({...S,loadMode:'direct',Fdirect:mid,kSauto:false,kS:Math.max(c.kSeff,1)});
       (cc.ok && cc.r.pmax<=cc.allow.surf) ? lo=mid : hi=mid; }
+    pressureCapped=lo>=c.Fop*20*(1-1e-6);
     return lo/S.g; })();
   const yMax=Math.max(pLim, c.Fop/S.g)*2.2;
   const X=v=>M.l+v/vMax*(W-M.l-M.r), Y=k=>H-M.b-clamp(k/yMax,0,1)*(H-M.t-M.b);
@@ -758,16 +765,13 @@ function figThermal(c){
   for(let v=0;v<=vMax+1e-9;v+=xs){ g.append(sv('line',{x1:X(v),y1:H-M.b,x2:X(v),y2:H-M.b+4,class:'svg-dim'}));
     txt(g,X(v),H-M.b+18,fmt(v,1),{anchor:'middle'}); }
   axis(g,M.l,H-M.b,W-M.r,H-M.b); axis(g,M.l,M.t,M.l,H-M.b);
-  /* 허용 영역 */
-  let area=`M${X(pts[0][0])} ${Y(Math.min(pts[0][1],pLim))}`;
-  pts.forEach(p=>{area+=`L${X(p[0])} ${Y(Math.min(isFinite(p[1])?p[1]:yMax,pLim))}`;});
-  area+=`L${X(vMax)} ${H-M.b}L${X(pts[0][0])} ${H-M.b}Z`;
-  g.append(sv('path',{d:area,fill:'var(--ok)','fill-opacity':.12,stroke:'none'}));
-  const finitePts=pts.filter(p=>isFinite(p[1]));
-  if(finitePts.length)g.append(sv('path',{d:'M'+finitePts.map(p=>`${X(p[0])} ${Y(p[1])}`).join('L'),
+  // 계산 불가 구간은 끊고, 미검증 영역을 녹색 가능 영역으로 채우지 않는다.
+  let thermalPath='',connected=false;
+  pts.forEach(p=>{if(!Number.isFinite(p[1])){connected=false;return;}thermalPath+=(connected?'L':'M')+`${X(p[0])} ${Y(p[1])}`;connected=true;});
+  if(thermalPath)g.append(sv('path',{d:thermalPath,
     fill:'none',stroke:'var(--warn)','stroke-width':2}));
   g.append(sv('line',{x1:M.l,y1:Y(pLim),x2:W-M.r,y2:Y(pLim),stroke:'var(--bad)','stroke-width':1.8,'stroke-dasharray':'8 4'}));
-  txt(g,W-M.r,Y(pLim)-7,`면압 한계 ${fmt(pLim,0)} kg`,{anchor:'end',fill:'var(--bad)'});
+  txt(g,W-M.r,Y(pLim)-7,`면압 참고 ${pressureCapped?'≥ ':''}${fmt(pLim,0)} kg`,{anchor:'end',fill:'var(--bad)'});
   const cx=X(clamp(S.v,0,vMax)), cy=Y(c.Fop/S.g), okNow=c.G.therm.s==='ok'&&c.G.pSurf.s==='ok';
   g.append(sv('line',{x1:cx,y1:H-M.b,x2:cx,y2:cy,class:'svg-cl'}),sv('line',{x1:M.l,y1:cy,x2:cx,y2:cy,class:'svg-cl'}));
   g.append(sv('circle',{cx,cy,r:6,fill:okNow?'var(--ok)':'var(--bad)',stroke:'var(--surface)','stroke-width':2}));
@@ -778,8 +782,8 @@ function figThermal(c){
   $('#thTag').textContent=`α ${fmt(S.wAlpha,3)} · R_th ${fmt(c.th.Rth,2)} K/W`;
   $('#thermalLegend').innerHTML=[
     ['var(--warn)','발열 한계 — 트레드가 허용 온도에 도달하는 하중'],
-    ['var(--bad)','면압 한계 — 속도와 무관하게 접촉압이 허용치에 도달하는 하중'],
-    ['var(--ok)','두 조건을 모두 만족하는 운전 영역'],
+    ['var(--bad)',`면압 참고선 — 현재 속도·고정 충격계수 기준${pressureCapped?' (하중 스캔 상한에 도달)':''}. 속도를 바꾸면 다시 계산됩니다.`],
+    ['var(--ink3)','열·면압 참고 그래프입니다. 다른 검사까지 포함한 사용 가능 여부는 종합 판정을 확인하세요. 계산 불가 구간은 표시하지 않습니다.'],
   ].map(([c2,t])=>`<span><i style="background:${c2};opacity:${c2.includes('ok')?.35:1}"></i>${esc(t)}</span>`).join('');
   return svg;
 }
@@ -788,12 +792,8 @@ function figReverse(c){
   const W=860,H=380,M={l:64,r:26,t:34,b:52};
   const svg=sv('svg',{viewBox:`0 0 ${W} ${H}`}); const g=sv('g'); svg.append(g);
   const Lmin=Math.max(15,S.L*0.35), Lmax=Math.max(S.L*2.6,120);
-  const need=L=>{
-    let lo=10, hi=2500;
-    for(let i=0;i<26;i++){ const mid=(lo+hi)/2;
-      const cc=compute({...S,D:mid,L});
-      (cc.ok && cc.worst!=='bad') ? hi=mid : lo=mid; }
-    return hi>2400?NaN:hi; };
+  const candidates=new Map();
+  const need=L=>{if(!candidates.has(L))candidates.set(L,diameterCandidate(S,L));return candidates.get(L);};
   const pts=[]; for(let i=0;i<=26;i++){const L=Lmin+(Lmax-Lmin)*i/26; pts.push([L,need(L)]);}
   const good=pts.filter(p=>isFinite(p[1]));
   const Dmax=Math.min(Math.max(...good.map(p=>p[1]),S.D*1.3)*1.12, 2600);
@@ -805,24 +805,21 @@ function figReverse(c){
   for(let L=Math.ceil(Lmin/xs)*xs;L<=Lmax;L+=xs){g.append(sv('line',{x1:X(L),y1:H-M.b,x2:X(L),y2:H-M.b+4,class:'svg-dim'}));
     txt(g,X(L),H-M.b+18,fmt(L,0),{anchor:'middle'});}
   axis(g,M.l,H-M.b,W-M.r,H-M.b); axis(g,M.l,M.t,M.l,H-M.b);
-  if(good.length>1){
-    g.append(sv('path',{d:`M${X(good[0][0])} ${Y(good[0][1])}`+good.map(p=>`L${X(p[0])} ${Y(p[1])}`).join('')
-      +`L${X(good[good.length-1][0])} ${M.t}L${X(good[0][0])} ${M.t}Z`,fill:'var(--ok)','fill-opacity':.13,stroke:'none'}));
-    g.append(sv('path',{d:'M'+good.map(p=>`${X(p[0])} ${Y(p[1])}`).join('L'),fill:'none',stroke:'var(--accent)','stroke-width':2.2}));
-  }
+  // 큰 직경이 다시 불가가 될 수 있으므로 후보 위쪽 전체를 가능 영역으로 칠하지 않는다.
+  good.forEach(p=>g.append(sv('circle',{cx:X(p[0]),cy:Y(p[1]),r:3,fill:'var(--accent)','data-diameter-candidate':p[1],'data-width':p[0]})));
   const cx=X(clamp(S.L,Lmin,Lmax)), cy=Y(S.D), nd=need(S.L), okNow=c.worst!=='bad';
   g.append(sv('line',{x1:cx,y1:H-M.b,x2:cx,y2:cy,class:'svg-cl'}),sv('line',{x1:M.l,y1:cy,x2:cx,y2:cy,class:'svg-cl'}));
   g.append(sv('circle',{cx,cy,r:6,fill:okNow?'var(--ok)':'var(--bad)',stroke:'var(--surface)','stroke-width':2}));
   txt(g,cx+11,cy+(okNow?18:-10),`현재 D${S.D} × L${S.L}`,{fill:okNow?'var(--ok)':'var(--bad)'});
   txt(g,M.l-46,M.t-14,'필요 직경 D (mm)',{cls:'svg-lbl'});
   txt(g,W-M.r,H-8,'바퀴 폭 L (mm)',{cls:'svg-lbl',anchor:'end'});
-  $('#rvTag').textContent = isFinite(nd)?`현재 폭 ${S.L} mm 기준 필요 직경 ${fmt(nd,0)} mm`:'스캔 범위 내 해 없음';
+  $('#rvTag').textContent = isFinite(nd)?`현재 폭 ${S.L} mm 기준 후보 직경 ${fmt(nd,1)} mm`:'스캔에서 통과 후보를 찾지 못했습니다';
   $('#revLegend').innerHTML=[
-    ['var(--accent)','불가 판정이 사라지는 최소 직경 — 전 게이트 동시 만족선'],
-    ['var(--ok)','두 치수가 모두 충족되는 영역'],
+    ['var(--accent)','점은 스캔에서 찾은 불가 해소 후보입니다. 주의 판정은 남을 수 있습니다.'],
+    ['var(--warn)','직경을 더 키워도 통과가 유지되지는 않습니다. 실제 치수로 다시 계산하세요. 스캔 사이의 좁은 구간은 놓칠 수 있습니다.'],
     [okNow?'var(--ok)':'var(--bad)', isFinite(nd)
-      ? `현재 D ${S.D} mm ${S.D>=nd?`— 필요 ${fmt(nd,0)} mm 충족`:`— 필요 ${fmt(nd,0)} mm 의 ${fmt(S.D/nd*100,0)}%`}`
-      : '이 폭에서는 직경만으로 해소되지 않습니다'],
+      ? `현재 D ${S.D} mm — 실제 판정 ${STATUS[c.worst]} · 후보 ${fmt(nd,1)} mm`
+      : '이 폭의 스캔에서 후보를 찾지 못했습니다. 해가 없다는 보장은 아닙니다.'],
   ].map(([c2,t])=>`<span><i style="background:${c2}"></i>${esc(t)}</span>`).join('');
   return svg;
 }
@@ -946,7 +943,7 @@ function buildUI(){
     e.addEventListener('input',()=>{
       S[id]=e.valueAsNumber;
       /* 무도장이면 바닥 물성이 f_ck 에서 파생되므로 표시값도 함께 갱신한다 */
-      if((id==='fck'||id==='EcMan') && !(S.fT>0)){ applyFloor(S,S.fPre); syncInputs(); }
+      if((id==='fck'||id==='EcMan') && !(S.fT>0)){ S.fE=Math.round(concreteE(S)); S.fNu=.20; syncInputs(); }
       render();});});
   CHECKS.forEach(id=>{const e=$('#'+id); if(!e)return;
     e.addEventListener('change',()=>{S[id]=e.checked; render();});});

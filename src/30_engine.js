@@ -21,7 +21,7 @@ const SRC = {
   cal    :{t:'제조사 정격 캘리브레이션',    c:'cal',      r:'사용자가 입력한 카탈로그 정격점에 모델을 앵커'},
   aciE   :{t:'콘크리트 탄성계수',           c:'code',     r:'ACI 318-19 §19.2.2.1  Ec = 4700·√f_ck'},
   aciB   :{t:'콘크리트 지압강도',           c:'code',     r:'ACI 318-19 §22.8.3  0.85·f_ck·√(A2/A1), √비 ≤ 2'},
-  fibT   :{t:'콘크리트 인장강도',           c:'code',     r:'fib Model Code 2010 §5.1.5.1  f_ctm = 0.30·f_ck^(2/3)'},
+  fibT   :{t:'콘크리트 인장강도',           c:'code',     r:'fib Model Code 2010 식 5.1-3a/b: f_ck≤50 → 0.30·f_ck^(2/3), f_ck>50 → 2.12·ln(1+(f_ck+8)/10). fib StructuralCodes 공식 구현과 대조.'},
   rigid  :{t:'강체 프레임 탄성 반력 분배',  c:'theory',   r:'등강성 지지점 위 강체, 1축 굽힘 중첩'},
   edge   :{t:'유한길이 단부 응력집중',      c:'empirical',r:'유한길이 롤러 실측/FEM 통상 범위 K = 2~3 (예리단부)'},
   step   :{t:'단차 충격 상한',              c:'approx',   r:'운동량–접촉강성 상한 + 감쇠 보정계수'},
@@ -59,7 +59,7 @@ const FLOORS = {
 
 /* ============================================================ 재료 · 기하 */
 function oedometricE(E,nu){                 // 완전 구속 시 상한 탄성계수
-  const n = clamp(nu,0,0.4999);
+  const n = nu; // 유효범위 검증 후 입력값을 그대로 사용한다.
   return E*(1-n)/((1+n)*(1-2*n));
 }
 /* 접착 탄성층 겉보기 탄성계수.
@@ -74,6 +74,8 @@ function confinedE(E,nu,t,b,k){
   return {E:Ea, S, ratio:Ea/E, M, x};
 }
 const eStar = (E1,n1,E2,n2)=> 1/((1-n1*n1)/E1 + (1-n2*n2)/E2);
+// R-sqrt(R²-b²)의 작은 접촉폭에서 발생하는 상쇄 오차를 피한다.
+const contactSag = (R,b)=>b>=R?R:(b/R)*b/(1+Math.sqrt(1-(b/R)**2));
 
 /* 근거 없는 두께 보간을 하지 않는다. 두 균질 반무한체 중 더 높은 면압을
    주는 환산강성을 선택한다. 실제 층상 탄성해에 대한 엄밀한 상한은 아니다. */
@@ -90,13 +92,13 @@ function solveLine(I){
   const invR = 1/R1 + (I.R2 ? 1/I.R2 : 0);
   if(!(invR>0)) return null;
   const R = 1/invR;
+  const floor=floorHalfspace(I);
   const relax = 0.35;
   let b = Math.sqrt(4*I.F*R/(PI*I.L*Math.max(eStar(I.E1,I.nu1,I.E2,I.nu2),1e-9)));
   let st={}, mix=0, E1e=I.E1, E2e=I.E2, nu2e=I.nu2, it=0, conv=false;
   for(it=1; it<=400; it++){
     st = (I.confine && I.tread>0) ? confinedE(I.E1,I.nu1,I.tread,b,I.kGent) : {E:I.E1,S:0,ratio:1,M:oedometricE(I.E1,I.nu1),x:0};
     E1e = st.E;
-    const floor=floorHalfspace(I);
     mix=floor.mix; E2e=floor.E; nu2e=floor.nu;
     const Es = eStar(E1e,I.nu1,E2e,nu2e);
     const bt = Math.sqrt(4*I.F*R/(PI*I.L*Es));
@@ -108,7 +110,7 @@ function solveLine(I){
   const pmax = 2*I.F/(PI*b*I.L), pavg = I.F/(2*b*I.L);
   return {kind:'line', R, R1, b, a:b, halfLen:I.L/2, Es, E1e, E2e, nu2e, mix, conf:st,
           A:2*b*I.L, pmax, pavg, iter:it, converged:conv,
-          delta: b>=R ? R : R-Math.sqrt(R*R-b*b)};
+          delta:contactSag(R,b)};
 }
 
 /* 크라운(횡방향 곡률) 있을 때: Hamrock–Brewe 타원접촉 근사 */
@@ -120,6 +122,7 @@ function solveEllipse(I){
   const swapped=Ry<Rx, ar = Math.max(Ry/Rx,Rx/Ry);
   const k  = 1.0339*Math.pow(ar,0.636);
   const Ee = 1.0003 + 0.5968/ar;
+  const floor=floorHalfspace(I);
   const relax = 0.4;
   let bx = Math.pow(6*Ee*I.F*R/(PI*k*2*eStar(I.E1,I.nu1,I.E2,I.nu2)),1/3);
   let ay = k*bx, st={}, E1e=I.E1, E2e=I.E2, nu2e=I.nu2, mix=0, it=0, conv=false;
@@ -132,7 +135,7 @@ function solveEllipse(I){
                 return {E:Ea,S:Seq,ratio:Ea/I.E1,M,x}; })()
        : {E:I.E1,S:0,ratio:1,M:oedometricE(I.E1,I.nu1),x:0};
     E1e = st.E;
-    const floor=floorHalfspace(I); mix=floor.mix; E2e=floor.E; nu2e=floor.nu;
+    mix=floor.mix; E2e=floor.E; nu2e=floor.nu;
     const Ep = 2*eStar(E1e,I.nu1,E2e,nu2e);           // E' = 2E*
     const bt = Math.pow(6*Ee*I.F*R/(PI*k*Ep),1/3);
     const nb = bx + relax*(bt-bx);
@@ -144,7 +147,7 @@ function solveEllipse(I){
   const pmax = 3*I.F/(2*PI*ay*bx), A = PI*ay*bx;
   return {kind:'ellipse', R, R1, Rx, Ry, b:bx, a:ay, ellipK:ay/bx, Es, E1e, E2e, nu2e, mix, conf:st,
           A, pmax, pavg:I.F/A, iter:it, converged:conv,
-          delta: bx>=Rx ? Rx : Rx-Math.sqrt(Rx*Rx-bx*bx)};
+          delta:contactSag(Rx,bx)};
 }
 
 /* ============================================== 단부 응력집중 (선접촉만) */
@@ -205,13 +208,13 @@ function stepImpact(S, F, delta){
   const hr = clamp(S.hstep/R,0,1);
   const vz = S.v*Math.sqrt(Math.max(2*hr-hr*hr,0));
   const k  = F/(delta/1000);
-  const m  = (F/S.g)*clamp(S.mUns,0.05,1);
+  const m  = (F/S.g)*S.mUns;
   const Fd = vz*Math.sqrt(m*k)*S.etaImp;
   return {phi:1+Fd/F, vz, k, Fdyn:Fd, m};
 }
 
 /* ============================================ 응력장 · 마찰 · 열 · 판정 */
-const tauProfile = z => { const c=Math.abs(z); return Math.abs(c - c*c/Math.sqrt(1+c*c)); };  // ζ = z/b
+const tauProfile = z => { const c=Math.abs(z),h=Math.hypot(1,c),q=c/h; return q/(1+q)/h; }; // ζ = z/b, 상쇄 없는 동치식
 
 function stressField(r, mu){
   const p0 = r.pmax;
@@ -228,7 +231,7 @@ function stressField(r, mu){
   };
 }
 /* 도막 하부 기재에 전달되는 압력: 선접촉 축상 σz(z) = p0/√(1+(z/b)²) */
-const subPressure = (p0,t,b)=> (t>0&&b>0) ? p0/Math.sqrt(1+(t/b)*(t/b)) : p0;
+const subPressure = (p0,t,b)=> (t>0&&b>0) ? p0/Math.hypot(1,t/b) : p0;
 
 /* 점탄성 구름저항 f = (4/3π)·α·(b/R) */
 const rollF = (alpha,b,R)=> (4/(3*PI))*alpha*(b/R);
@@ -241,7 +244,7 @@ function thermal(S, W, r, F){
   const Aw  = PI*(S.D/1000)*(S.L/1000) + 2*(PI/4)*Math.pow(S.D/1000,2);
   const h   = S.hNat + S.hVel*S.v;
   const UA  = h*Aw + S.UAhub;
-  const Rth = 1/Math.max(UA,1e-9);
+  const Rth = 1/UA;
   const dT  = P*Rth*S.rthScale;
   return {f, Prr, P, Aw, h, UA, Rth:Rth*S.rthScale, dT, T:S.Tamb+dT,
           torque: f*F*(R/1000)};
@@ -255,17 +258,18 @@ function thermalAllow(S, W, r, F, th, solveAt){
   if(!(th.dT>0)) return Infinity;
   const F0 = F*Math.pow(dTa/th.dT, 2/3);
   if(!solveAt || !(F0>0) || !isFinite(F0)) return F0;
-  const dTof = Fq => { const rr=solveAt(Fq); if(!rr) return Infinity;
+  const dTof = Fq => { const rr=solveAt(Fq); if(!rr||!rr.converged||!Number.isFinite(rr.b)) return Infinity;
     return thermal(S,{alpha:W.alpha,Tmax:W.Tmax},rr,Fq).dT; };
   let lo=F0/3, hi=F0*3, k=0;
   while(dTof(lo)>dTa && k++<8){ hi=lo; lo/=3; }
   k=0; while(dTof(hi)<dTa && k++<8){ lo=hi; hi*=3; }
-  if(!(dTof(lo)<=dTa && dTof(hi)>=dTa)) return F0;
+  if(!(dTof(lo)<=dTa && dTof(hi)>=dTa)) return NaN;
   for(let i=0;i<16;i++){ const m=Math.sqrt(lo*hi); (dTof(m)<=dTa ? lo=m : hi=m); }
   return Math.sqrt(lo*hi);
 }
 
 /* 콘크리트 */
-const concreteE = S => S.EcMan>0 ? S.EcMan : 4700*Math.sqrt(Math.max(S.fck,1));
+const concreteE = S => S.EcMan>0 ? S.EcMan : 4700*Math.sqrt(S.fck);
 const concreteBearing = S => 0.85*S.fck*Math.sqrt(S.bearingAreaRatio); // ACI: 면적비를 명시, 기본 1
-const concreteTens    = S => 0.30*Math.pow(Math.max(S.fck,1),2/3);
+const concreteTens = S => S.fck<=50 ? 0.30*Math.pow(S.fck,2/3) : 2.12*Math.log1p((S.fck+8)/10);
+const concreteTensExpr = S => S.fck<=50?'0.30·f_ck^(2/3)':'2.12·ln(1+(f_ck+8)/10)';

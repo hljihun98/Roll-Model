@@ -24,7 +24,7 @@ function utilMu(S, froll){
   return {mu:Math.min(need, S.mu), n:'직진 가감속 (부분 슬립)', full:false, need};
 }
 
-function computeCore(S, opts){
+function computeCore(S, opts={}){
   const inputErrors=validateState(S);
   if(inputErrors.length) return {error:inputErrors[0],errs:inputErrors,S};
   const WN = WHEELS[S.wPre], FN = FLOORS[S.fPre];
@@ -43,7 +43,9 @@ function computeCore(S, opts){
   if(!(nu2>=0&&nu2<0.5))        errs.push(`바닥 포아송비 ν₂ = ${nu2} 가 유효범위(0 ≤ ν < 0.5)를 벗어났습니다.`);
   if(S.R2 && (1/(S.D/2)+1/S.R2)<=0) errs.push(`바닥 오목 곡률 R₂ = ${S.R2} mm 가 바퀴 반지름보다 완만하지 않습니다.`);
 
-  const LC = loadChain(S);
+  // 자동 충격 계산의 두 번째 단계만 동일 주행 케이스를 재사용한다.
+  const operating=opts.operating;
+  const LC = operating?.LC || loadChain(S);
   const kSeff = (S.loadMode==='direct' && S.kSauto) ? 1 : Math.max(S.kS,1);
   const Fop = LC.Fop, Fpk = Fop*kSeff;
   if(!(Fop>0)) errs.push('캐스터당 설계하중이 0 이하입니다.');
@@ -61,7 +63,7 @@ function computeCore(S, opts){
     if(rr) rr.overflow = ovf;
     return rr;
   };
-  const rop = solveAt(Fop), rpk = solveAt(Fpk);
+  const rop = operating?.rop || solveAt(Fop), rpk = Fop===Fpk?rop:solveAt(Fpk);
   if(!rop||!rpk) return {error:'입력 조합에서 접촉해가 성립하지 않습니다.', errs:['등가 곡률 또는 재료 물성이 유효하지 않습니다.'], S};
   if(!rop.converged||!rpk.converged || [rop,rpk].some(r=>![r.b,r.a,r.pmax,r.Es,r.delta].every(Number.isFinite)))
     return {error:'유한한 접촉해로 수렴하지 않았습니다. 입력 범위와 모델 적용성을 확인하십시오.',errs:['접촉해 미수렴'],S};
@@ -75,10 +77,11 @@ function computeCore(S, opts){
   const pEdge = rpk.pmax*Kedge;
 
   /* 열 — 주행(연속) 케이스에서 산정 */
-  const th   = thermal(S, {alpha:W.alpha, Tmax:W.Tmax}, rop, Fop);
+  const th   = operating?.th || thermal(S, {alpha:W.alpha, Tmax:W.Tmax}, rop, Fop);
   if(![th.T,th.P,th.Prr,th.Rth,th.f].every(Number.isFinite))
     return {error:'입력 범위에서 유한한 정상상태 열해를 계산할 수 없습니다.',errs:['열해 범위 초과'],S};
-  const Fth  = thermalAllow(S, W, rop, Fop, th, solveAt);
+  const Fth  = operating ? operating.Fth : thermalAllow(S, W, rop, Fop, th, solveAt);
+  if(!(Fth>=0)||(!Number.isFinite(Fth)&&th.dT>0)) return {error:'열 허용하중을 수렴 범위에서 찾지 못했습니다.',errs:['열 역산 미수렴'],S};
   const Tdes = Math.min(th.T, W.Tmax);                       // 허용온도까지만 저감
   const kTd  = clamp(1 - W.kT*(Tdes-23), 0.4, 1);
 
@@ -210,7 +213,7 @@ function computeCore(S, opts){
   G.tens={stage:6, sym:'σ_t', title:'표면 인장 — 균열 개시', v:sfp.sigT, u:'MPa',
     lim:`≤ ${tenLim.toFixed(2)}`, s:bandLo(gRat,1,S.stressOver),
     why:`${tenGov} 인장 허용 ${tenLim.toFixed(2)} MPa 대비 ${gRat.toFixed(2)}배 · 접촉 후단 표면`,
-    rat:{expr:'σ_x(후단) = 2·μ_util·p_max     f_ctm = 0.30·f_ck^(2/3)',
+    rat:{expr:`σ_x(후단) = 2·μ_util·p_max     f_ctm = ${concreteTensExpr(S)}`,
          subs:`2 × ${MU.mu.toFixed(3)} × ${rpk.pmax.toFixed(2)} = ${sfp.sigT.toFixed(2)} MPa   (콘크리트 f_ctm ${fctm.toFixed(2)} · 도막 ${bare?'—':S.fTen} · 바퀴 ${S.wTen} MPa → ${tenGov} 지배)`,
          src:'fric',
          note:'마찰이 실리면 접촉 후단 표면에 인장이 생깁니다. 에폭시 균열과 콘크리트 표층 박리가 실제로 시작되는 응력이며, 원본 계산기에는 이 항목 자체가 없었습니다.'}};
@@ -246,7 +249,7 @@ function compute(S){
   if(!p1.ok) return p1;
   const imp = stepImpact(S, p1.Fop, p1.rop.delta);
   const phi = clamp(imp.phi, 1, S.impactMax);
-  const p2  = computeCore({...S, kS:phi});
+  const p2  = phi===1?p1:computeCore({...S, kS:phi},{operating:p1});
   if(p2.ok){ p2.imp = imp; p2.kSused = phi;
     if(imp.phi>S.impactMax){
       const gate=p2.G.load; gate.s='bad'; gate.why=`충격계수 ${imp.phi.toFixed(2)}가 설정 상한 ${S.impactMax}를 넘습니다. 상한으로 자른 참고값을 설계에 사용할 수 없습니다.`;
@@ -297,12 +300,33 @@ function suggest(S){
   return {items, scale};
 }
 
+/* 게이트는 직경에 대해 단조롭지 않다. 실제 통과 구간을 먼저 찾는다.
+   반환값은 검증된 후보이며 스캔 사이의 좁은 구간이나 전역 최소값은 보장하지 않는다. */
+function diameterCandidate(S,L){
+  const loD=Math.max(10,2*S.wT+1e-6), hiD=2500;
+  if(loD>hiD)return NaN;
+  const samples=Array.from({length:49},(_,i)=>loD*Math.pow(hiD/loD,i/48));
+  if(S.D>=loD&&S.D<=hiD)samples.push(S.D);
+  samples.sort((a,b)=>a-b);
+  const passes=D=>{const c=compute({...S,D,L});return c.ok&&c.worst!=='bad';};
+  let previous=loD;
+  for(const D of samples){
+    if(passes(D)){
+      let lo=previous,hi=D;
+      for(let j=0;j<18&&hi-lo>1e-5;j++){const mid=(lo+hi)/2;if(passes(mid))hi=mid;else lo=mid;}
+      return hi;
+    }
+    previous=D;
+  }
+  return NaN;
+}
+
 /* ============================== 제조사 정격으로 열모델 캘리브레이션 */
 function calibrate(S){
   if(!(S.calF>0 && S.calV>0 && S.calD>0 && S.calL>0)) return null;
   const T = {...S, D:S.calD, L:S.calL, edgeR:0, crown:0, R2:0,
              loadMode:'direct', Fdirect:S.calF, kSauto:false, kS:1,
-             v:S.calV, duty:1, alphaScale:1, rthScale:1};
+             v:S.calV, duty:1, rthScale:1};
   const c = computeCore(T);
   if(!c.ok) return null;
   const need = S.wTmax - S.Tamb;
