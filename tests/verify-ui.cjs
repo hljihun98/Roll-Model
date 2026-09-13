@@ -12,6 +12,9 @@ withBrowser(async(browser,url)=>{
   await p.selectOption('#sWPre','pa6');await p.fill('#sD','150');await p.fill('#sL','60');await p.fill('#crown','120');
   const flat=await p.evaluate(()=>({p:C.r.pmax,kind:C.r.kind,expr:C.G.pSurf.rat.expr,model:C.G.model.s}));
   assert.equal(flat.kind,'ellipse');assert.equal(flat.model,'bad');assert.match(flat.expr,/3F/);
+  assert.equal(await p.locator('#figPlan ellipse').count(),1);
+  assert.match(await p.locator('#planTag').textContent(),/a\/b/);
+  assert.match(await p.locator('#figPlan').textContent(),/2a =/);
   await p.fill('#R2','100');assert.ok(await p.evaluate(()=>C.r.pmax)>flat.p);
   await p.fill('#R2','0');await p.fill('#crown','0');
   console.log('PASS crown curvature and rationale');

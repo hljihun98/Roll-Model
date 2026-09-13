@@ -606,8 +606,8 @@ function figPlan(c){
   const aly=BY-base*(c.allow.surf/Math.max(c.r.pmax,1e-6));
   if(aly>BY-BH-16&&aly<BY){ g.append(sv('line',{x1:BX,y1:aly,x2:BX+BW,y2:aly,stroke:'var(--ok)','stroke-width':1.4,'stroke-dasharray':'7 4'}));
     txt(g,BX+2,aly-5,`허용 ${fmt(c.allow.surf,1)} MPa`,{fill:'var(--ok)'}); }
-  hdim(g,BX,BX+BW,BY+24,`L_eff = ${fmt(Le,1)} mm`,{ext:20});
-  $('#planTag').textContent=`K_edge ${fmt(c.Kedge,2)} · L/2b ${fmt(c.ar,2)}`;
+  hdim(g,BX,BX+BW,BY+24,`${c.line?'L_eff':'2a'} = ${fmt(Le,1)} mm`,{ext:20});
+  $('#planTag').textContent=`K_edge ${fmt(c.Kedge,2)} · ${c.line?'L/2b':'a/b'} ${fmt(c.ar,2)}`;
   $('#planLegend').innerHTML=[
     [st,`접촉 자국 ${fmt(Le,1)} × ${fmt(2*b,2)} mm`],
     ['var(--bad)', c.line?`단부 분포는 개략도 · K = 1 + (K₀−1)/(1 + ${S.edgeDecay}·R_e/b)`
