@@ -46,7 +46,7 @@ const SC=s=>({ok:'var(--ok)',warn:'var(--warn)',bad:'var(--bad)'}[s]);
 
 /* ════════════════════════════════════════════ 파라미터 레일 */
 const RAIL_HTML = `
-<details class="grp" open><summary><i class="caret"></i>하중<span class="tag" id="tgLoad">—</span></summary><div class="grp-b">
+<details class="grp" id="settingsLoad" open><summary><i class="caret"></i>② 하중<span class="tag" id="tgLoad">—</span></summary><div class="grp-b">
   <div class="seg" data-set="loadMode"><button data-v="build">중량에서 산출</button><button data-v="direct">직접 입력</button></div>
   <div class="field" data-show="direct"><label>캐스터당 하중 F</label><div class="inp"><input type="number" id="Fdirect" step="10"><span class="unit">N</span></div></div>
   <div data-show="build" style="display:flex;flex-direction:column;gap:7px">
@@ -74,7 +74,7 @@ const RAIL_HTML = `
   </div>
 </div></details>
 
-<details class="grp" open><summary><i class="caret"></i>바퀴<span class="tag" id="tgWheel">—</span></summary><div class="grp-b">
+<details class="grp" id="settingsWheel" open><summary><i class="caret"></i>③ 바퀴<span class="tag" id="tgWheel">—</span></summary><div class="grp-b">
   <select id="wPre" aria-label="바퀴 재질"></select>
   <div class="slid"><span class="hint" style="width:34px">D</span><input type="range" id="Dr" min="40" max="600" step="5"><span class="v" id="Dv"></span></div>
   <div class="slid"><span class="hint" style="width:34px">L</span><input type="range" id="Lr" min="15" max="300" step="5"><span class="v" id="Lv"></span></div>
@@ -92,7 +92,7 @@ const RAIL_HTML = `
   <div class="field"><label>바닥 곡률 R₂<small>0 = 평면, 음수 = 오목(레일)</small></label><div class="inp"><input type="number" id="R2" step="50"><span class="unit">mm</span></div></div>
 </div></details>
 
-<details class="grp" open><summary><i class="caret"></i>바닥<span class="tag" id="tgFloor">—</span></summary><div class="grp-b">
+<details class="grp" id="settingsFloor" open><summary><i class="caret"></i>④ 바닥<span class="tag" id="tgFloor">—</span></summary><div class="grp-b">
   <select id="fPre" aria-label="바닥 마감"></select>
   <div class="field"><label>도막 두께 t<small>0 = 무도장</small></label><div class="inp"><input type="number" id="fT" step="0.1"><span class="unit">mm</span></div></div>
   <div class="field"><label>콘크리트 f_ck</label><div class="inp"><input type="number" id="fck" step="1"><span class="unit">MPa</span></div></div>
@@ -107,7 +107,7 @@ const RAIL_HTML = `
   <div class="field"><label>E_c 수동 지정<small>0 = ACI 식 자동</small></label><div class="inp"><input type="number" id="EcMan" step="1000"><span class="unit">MPa</span></div></div>
 </div></details>
 
-<details class="grp" open><summary><i class="caret"></i>주행 · 기동<span class="tag" id="tgRun">—</span></summary><div class="grp-b">
+<details class="grp" id="settingsRun" open><summary><i class="caret"></i>⑤ 주행 · 기동<span class="tag" id="tgRun">—</span></summary><div class="grp-b">
   <div class="field"><label>주행 속도 v</label><div class="inp"><input type="number" id="v" step="0.1"><span class="unit">m/s</span></div></div>
   <div class="field"><label>듀티 사이클<small>0~1, 전체 시간 중 주행 비율</small></label><div class="inp"><input type="number" id="duty" step="0.05" min="0" max="1"></div></div>
   <div class="field"><label>주위 온도</label><div class="inp"><input type="number" id="Tamb" step="1"><span class="unit">°C</span></div></div>
@@ -163,29 +163,26 @@ const CHECKS=['kSauto','nuOvAll'];
 
 /* ══════════════════════════════════════════ 입력 스트립 */
 const STRIP_HTML = `
-<div class="cellin"><span class="eyebrow">캐스터당 하중</span>
+<section class="cellin" id="inputLoad" aria-labelledby="inputLoadTitle"><h2 class="input-title" id="inputLoadTitle">② 하중</h2><span class="eyebrow">캐스터당 하중</span>
   <div class="big"><span class="n" id="sF" style="font-size:19px;font-weight:500;letter-spacing:-.02em">—</span><u>N</u></div>
-  <span class="hint" id="sFsub">—</span></div>
-<div class="cellin"><span class="eyebrow">바퀴 재질</span>
-  <select id="sWPre"></select><span class="hint" id="sWsub">—</span></div>
-<div class="cellin"><span class="eyebrow">직경 D</span>
-  <div class="slid"><input type="range" id="sD" min="40" max="600" step="5"><span class="v" id="sDv"></span></div>
-  <span class="hint">접촉폭과 b/R을 가장 크게 움직이는 변수</span></div>
-<div class="cellin"><span class="eyebrow">폭 L</span>
-  <div class="slid"><input type="range" id="sL" min="15" max="300" step="5"><span class="v" id="sLv"></span></div>
-  <span class="hint">면압에는 1차, 단부집중에는 간접 영향</span></div>
-<div class="cellin"><span class="eyebrow">바닥 마감</span>
-  <select id="sFPre"></select><span class="hint" id="sFfsub">—</span></div>
-<div class="cellin"><span class="eyebrow">주행 속도</span>
-  <div class="slid"><input type="range" id="sV" min="0" max="3" step="0.05"><span class="v" id="sVv"></span></div>
-  <span class="hint" id="sVsub">발열 판정을 지배</span></div>
-<div class="cellin"><span class="eyebrow">기동 조건</span>
+  <span class="hint" id="sFsub">—</span><button class="tbtn settings-link" data-settings="Load">하중 설정</button><span class="hint">중량에서 산출 또는 N 직접 입력</span></section>
+<section class="cellin" id="inputWheel" aria-labelledby="inputWheelTitle"><h2 class="input-title" id="inputWheelTitle">③ 바퀴</h2>
+  <label class="eyebrow" for="sWPre">바퀴 재질</label><select id="sWPre"></select>
+  <div class="slid"><label for="sD">직경 D</label><input type="range" id="sD" min="40" max="600" step="5"><span class="v" id="sDv"></span><span class="unit">mm</span></div>
+  <div class="slid"><label for="sL">폭 L</label><input type="range" id="sL" min="15" max="300" step="5"><span class="v" id="sLv"></span><span class="unit">mm</span></div>
+  <span class="hint" id="sWsub">—</span><button class="tbtn settings-link" data-settings="Wheel">바퀴 상세 설정</button></section>
+<section class="cellin" id="inputFloor" aria-labelledby="inputFloorTitle"><h2 class="input-title" id="inputFloorTitle">④ 바닥</h2><label class="eyebrow" for="sFPre">바닥 마감</label>
+  <select id="sFPre"></select><span class="hint" id="sFfsub">—</span><button class="tbtn settings-link" data-settings="Floor">도막·기재 설정</button></section>
+<section class="cellin" id="inputRun" aria-labelledby="inputRunTitle"><h2 class="input-title" id="inputRunTitle">⑤ 주행 · 기동</h2><label class="eyebrow" for="sV">주행 속도</label>
+  <div class="slid"><input type="range" id="sV" min="0" max="3" step="0.05"><span class="v" id="sVv"></span><span class="unit">m/s</span></div>
+  <span class="hint" id="sVsub">발열 판정을 지배</span><span class="eyebrow">기동 조건</span>
   <div class="seg" data-set="maneuver" style="margin-top:2px"><button data-v="drive">직진</button><button data-v="spin">선회</button></div>
-  <span class="hint" id="sMsub">—</span></div>`;
+  <span class="hint" id="sMsub">—</span><button class="tbtn settings-link" data-settings="Run">듀티·주행 상세 설정</button></section>`;
 
 /* ══════════════════════════════════════════════ 렌더 */
 function renderVerdict(c){
   const v=$('#verdict'); v.dataset.s=c.worst;
+  const keysOpen=v.querySelector('.verdict-details')?.open ?? !matchMedia('(max-width:960px)').matches;
   const mark={ok:'✓',warn:'!',bad:'×'}[c.worst];
   const head={ok:'현재 사양으로 진행 가능합니다',
               warn:'진행 가능하나 확인이 필요합니다',
@@ -203,12 +200,12 @@ function renderVerdict(c){
     ['트레드 온도 T', fmt(c.th.T,0), '°C', `허용 ${c.W.Tmax} · 열 허용하중 ${fmt(c.Fth/S.g,0)} kg`, c.G.therm.s],
     ['캐스터당 하중', fmt(c.Fop/S.g,0), 'kg', `피크 ${fmt(c.Fpk/S.g,0)} kg (충격 ×${fmt(c.kSeff,2)})`, c.G.load.s],
   ];
-  v.innerHTML=`<div class="verdict-h"><div class="vmark">${mark}</div>
+  v.innerHTML=`<div class="verdict-label">⑥ 판정 결과 <span>입력 변경 시 자동 갱신</span></div><div class="verdict-h"><div class="vmark">${mark}</div>
     <div class="vtxt"><h2>${head}</h2><p>${lead}${sub}</p></div></div>
-    <div class="vkeys">${keys.map(([k,val,u,s,st])=>
+    <details class="verdict-details"${keysOpen?' open':''}><summary>주요 계산값 보기</summary><div class="vkeys">${keys.map(([k,val,u,s,st])=>
       `<div class="vkey"><span class="k">${esc(k)}</span>
        <span class="v" style="color:${st==='ok'?'var(--ink)':SC(st)}">${val}<u>${u}</u></span>
-       <span class="s">${esc(s)}</span></div>`).join('')}</div>`;
+       <span class="s">${esc(s)}</span></div>`).join('')}</div></details>`;
 }
 
 function renderAlerts(c){
@@ -972,9 +969,24 @@ function buildUI(){
     Object.assign(T,p,{mode:S.mode,tab:S.tab}); S=T; openRungs.clear(); syncInputs(); render(); e.target.value='';};
   $('#mEasy').onclick=()=>setMode('easy'); $('#mPro').onclick=()=>setMode('pro');
   $$('#tabs button').forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
-  $('#railToggle').onclick=()=>{const r=$('#rail'); const hidden=r.style.display==='none';
-    r.style.display=hidden?'':'none';
-    document.querySelector('.wrap').style.gridTemplateColumns=hidden?'':'1fr';};
+  $('#railToggle').onclick=()=>{
+    const show=$('#rail').style.display==='none';setRailVisible(show);
+    if(show)jumpTo('#rail', '#rail .grp summary');
+  };
+  $$('[data-settings]').forEach(b=>b.onclick=()=>openSettings(b.dataset.settings));
+  $('#settingsDone').onclick=showResults;
+  $('#jumpInputs').onclick=()=>{if(matchMedia('(max-width:960px)').matches)setRailVisible(false);jumpTo('#strip','#inputLoad .settings-link');};
+  $('#jumpResults').onclick=showResults;
+  const mobile=matchMedia('(max-width:960px)');
+  const adaptInputs=()=>{
+    $$('#rail .grp').forEach((d,i)=>d.open=!mobile.matches&&i<4);
+    setRailVisible(S.mode==='pro'&&!mobile.matches);
+  };
+  mobile.addEventListener('change',adaptInputs);adaptInputs();
+  $$('#rail .grp').forEach(d=>d.addEventListener('toggle',()=>{
+    if(mobile.matches&&d.open)$$('#rail .grp').forEach(other=>{if(other!==d)other.open=false;});
+  }));
+  new ResizeObserver(()=>document.documentElement.style.setProperty('--top-height',`${$('.top').getBoundingClientRect().height}px`)).observe($('.top'));
   $('#btnExpand').onclick=()=>{const all=$$('.rung'); const anyClosed=all.some(d=>!d.open);
     all.forEach(d=>{d.open=anyClosed; anyClosed?openRungs.add(d.dataset.id):openRungs.delete(d.dataset.id);});
     $('#btnExpand').textContent=anyClosed?'근거 모두 닫기':'근거 모두 열기';};
@@ -1014,12 +1026,42 @@ function syncInputs(){
     ? (el.classList.contains('field')?'grid':'flex') : 'none';});
 }
 
+function setRailVisible(visible){
+  $('#rail').style.display=visible?'':'none';
+  $('.wrap').style.gridTemplateColumns=visible?'':'1fr';
+  $('#railToggle').setAttribute('aria-expanded',String(visible));
+  $('#railToggle').setAttribute('aria-label',visible?'상세 입력 패널 접기':'상세 입력 패널 열기');
+  $('#railToggle').setAttribute('aria-controls','rail');
+}
+let highlightTimer;
+function jumpTo(selector,focusSelector){
+  const target=$(selector);if(!target)return;
+  $$('.input-highlight').forEach(e=>e.classList.remove('input-highlight'));
+  clearTimeout(highlightTimer);target.classList.add('input-highlight');
+  const focus=focusSelector?$(focusSelector):target;
+  if(!focus.hasAttribute('tabindex')&&!focus.matches('button,input,select,summary'))focus.tabIndex=-1;
+  focus.focus({preventScroll:true});
+  target.scrollIntoView({behavior:REDUCED?'instant':'smooth',block:'start'});
+  highlightTimer=setTimeout(()=>target.classList.remove('input-highlight'),2400);
+}
+function openSettings(group){
+  if(S.mode!=='pro')setMode('pro');
+  setRailVisible(true);
+  if(matchMedia('(max-width:960px)').matches)$$('#rail .grp').forEach(d=>d.open=false);
+  const selector='#settings'+group;$(selector).open=true;
+  jumpTo(selector,selector+' summary');
+}
+function showResults(){
+  if(matchMedia('(max-width:960px)').matches)setRailVisible(false);
+  jumpTo('#verdict');
+}
 function setMode(m){ S.mode=m; document.body.dataset.mode=m;
   $('#mEasy').setAttribute('aria-pressed',String(m==='easy'));
   $('#mPro').setAttribute('aria-pressed',String(m==='pro'));
   $('#railToggle').style.display = m==='pro'?'grid':'none';
   $('#tabs').style.display = m==='pro'?'flex':'none';
   $$('.two.pro-only').forEach(e=>e.style.display = m==='pro'?'grid':'none');
+  setRailVisible(m==='pro'&&!matchMedia('(max-width:960px)').matches);
   if(m==='easy'){ setTab('chain'); }
   render(); }
 

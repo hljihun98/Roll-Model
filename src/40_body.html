@@ -6,7 +6,6 @@
     <button id="mEasy" aria-pressed="true">간단</button>
     <button id="mPro"  aria-pressed="false">상세</button>
   </div>
-  <select id="scen" aria-label="시나리오"></select>
   <span class="sp"></span>
   <button class="tbtn" id="btnGuide" aria-haspopup="dialog">시작 가이드</button>
   <button class="tbtn" id="btnExpand">근거 모두 열기</button>
@@ -17,11 +16,17 @@
     <svg viewBox="0 0 20 20"><circle cx="10" cy="10" r="4"/><path d="M10 1.6v2M10 16.4v2M18.4 10h-2M3.6 10h-2M15.9 4.1l-1.4 1.4M5.5 14.5l-1.4 1.4M15.9 15.9l-1.4-1.4M5.5 5.5L4.1 4.1"/></svg></button>
 </header>
 
+<section class="scenario-panel" id="scenarioPanel" aria-labelledby="scenarioTitle">
+  <div><label id="scenarioTitle" for="scen">① 사용 조건 선택</label><p class="hint">비슷한 시나리오를 불러온 뒤, 아래 입력을 실제 설계값으로 바꾸세요.</p></div>
+  <select id="scen" aria-label="시나리오"></select>
+</section>
 <div class="wrap">
-<aside class="rail" id="rail"><div class="rail-in" id="railIn"></div></aside>
+<aside class="rail" id="rail" aria-label="상세 입력"><div class="rail-in"><div class="rail-heading"><b>상세 입력</b><button class="tbtn" id="settingsDone">결과 보기</button></div><div id="railIn"></div></div></aside>
 
 <main class="main">
   <section class="strip" id="strip"></section>
+  <section class="verdict" id="verdict" data-s="ok" tabindex="-1" aria-label="⑥ 판정 결과"></section>
+  <div id="alerts" style="display:flex;flex-direction:column;gap:10px"></div>
   <section class="card hero-fig" id="heroCard">
     <div class="card-h"><b>접촉 단면</b><span id="figTag"></span><span class="sp"></span>
       <span class="hint" id="rollNote"></span>
@@ -29,13 +34,6 @@
     <div class="fig" id="figSection"></div>
     <div class="legend" id="figLegend"></div>
   </section>
-  <section class="card" id="planCard">
-    <div class="card-h"><b>접촉 자국 · 단부 집중</b><span id="planTag"></span></div>
-    <div class="fig" id="figPlan"></div>
-    <div class="legend" id="planLegend"></div>
-  </section>
-  <section class="verdict" id="verdict" data-s="ok"></section>
-  <div id="alerts" style="display:flex;flex-direction:column;gap:10px"></div>
   <nav class="tabs pro-only frow" id="tabs" role="tablist" style="display:none"></nav>
 
   <section id="viewChain" style="display:flex;flex-direction:column;gap:16px">
@@ -45,6 +43,10 @@
         <p class="hint" style="margin-top:9px">단일 변수 제안은 <b>그 값 하나만</b> 바꿔 스캔 범위에서 찾은 개선값입니다. 치수 동시 확대는 표시된 치수를 함께 바꿉니다. 주의 판정이 남을 수 있습니다.</p></div>
     </div>
     <section class="ladder" id="ladder"></section>
+    <section class="card" id="planCard">
+      <div class="card-h"><b>접촉 자국 · 단부 집중</b><span id="planTag"></span></div>
+      <div class="fig" id="figPlan"></div><div class="legend" id="planLegend"></div>
+    </section>
     <div class="two pro-only" style="display:none">
       <div class="card"><div class="card-h"><b>깊이 방향 응력</b><span>τ(z) · σ_z(z)</span></div>
         <div class="fig" id="figDepth"></div><div class="legend" id="depthLegend"></div></div>
@@ -98,3 +100,4 @@
   </section>
 </main>
 </div>
+<nav class="mobile-jump" aria-label="화면 바로가기"><button id="jumpInputs">입력 보기</button><button id="jumpResults">판정 결과 보기</button></nav>
