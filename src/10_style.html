@@ -331,6 +331,12 @@ select{width:100%;padding:5px 7px;background:var(--surface);border:1px solid var
 .visual-column #figSection svg{max-height:320px}
 .visual-column #figPlan svg{max-height:210px}
 .visual-column .svg-num,.visual-column .svg-lbl{font-size:14px}
+.visual-column{container-type:inline-size;container-name:visuals}
+.visual-column>.card,.visual-column>.stress-figures{flex-shrink:0}
+.stress-figures{grid-template-columns:1fr}
+.stress-figures .fig svg{max-height:260px}
+.stress-figures .svg-num,.stress-figures .svg-lbl{font-size:11px}
+@container visuals (min-width:640px){.stress-figures{grid-template-columns:1fr 1fr}}
 .figure-metrics{padding:7px 12px 0;font-size:12px;color:var(--ink2);font-variant-numeric:tabular-nums;line-height:1.6}
 .figure-notes>summary{padding:7px 12px;border-top:1px solid var(--line);font-size:11px;color:var(--ink2);cursor:pointer}
 .figure-dialog{width:min(1160px,calc(100vw - 24px));max-height:calc(100dvh - 24px);padding:0;border:1px solid var(--line2);border-radius:var(--r2);background:var(--surface);color:var(--ink)}

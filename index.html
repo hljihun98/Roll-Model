@@ -338,6 +338,12 @@ select{width:100%;padding:5px 7px;background:var(--surface);border:1px solid var
 .visual-column #figSection svg{max-height:320px}
 .visual-column #figPlan svg{max-height:210px}
 .visual-column .svg-num,.visual-column .svg-lbl{font-size:14px}
+.visual-column{container-type:inline-size;container-name:visuals}
+.visual-column>.card,.visual-column>.stress-figures{flex-shrink:0}
+.stress-figures{grid-template-columns:1fr}
+.stress-figures .fig svg{max-height:260px}
+.stress-figures .svg-num,.stress-figures .svg-lbl{font-size:11px}
+@container visuals (min-width:640px){.stress-figures{grid-template-columns:1fr 1fr}}
 .figure-metrics{padding:7px 12px 0;font-size:12px;color:var(--ink2);font-variant-numeric:tabular-nums;line-height:1.6}
 .figure-notes>summary{padding:7px 12px;border-top:1px solid var(--line);font-size:11px;color:var(--ink2);cursor:pointer}
 .figure-dialog{width:min(1160px,calc(100vw - 24px));max-height:calc(100dvh - 24px);padding:0;border:1px solid var(--line2);border-radius:var(--r2);background:var(--surface);color:var(--ink)}
@@ -469,6 +475,12 @@ body[data-mode="pro"] .easy-only{display:none}
     <div class="card-h"><b>접촉 자국 · 단부 집중</b><span id="planTag"></span><span class="sp"></span><button class="tbtn" data-enlarge="figPlan" aria-label="접촉 자국 크게 보기" aria-haspopup="dialog">크게 보기</button></div>
     <p class="figure-metrics" id="planReadout"></p><div class="fig" id="figPlan"></div><details class="figure-notes"><summary>분포·허용치 정보</summary><div class="legend" id="planLegend"></div></details>
   </section>
+  <div class="two pro-only stress-figures" style="display:none">
+    <section class="card" id="depthCard"><div class="card-h"><b>깊이 방향 응력</b><span>τ(z) · σ_z(z)</span><span class="sp"></span><button class="tbtn" data-enlarge="figDepth" aria-label="깊이 방향 응력 크게 보기" aria-haspopup="dialog">크게 보기</button></div>
+      <p class="figure-metrics" id="depthReadout"></p><div class="fig" id="figDepth"></div><details class="figure-notes"><summary>응력 해석·범례</summary><div class="legend" id="depthLegend"></div></details></section>
+    <section class="card" id="surfCard"><div class="card-h"><b>표면 응력 분포</b><span>σ_x(x) · 후단 인장</span><span class="sp"></span><button class="tbtn" data-enlarge="figSurf" aria-label="표면 응력 분포 크게 보기" aria-haspopup="dialog">크게 보기</button></div>
+      <p class="figure-metrics" id="surfReadout"></p><div class="fig" id="figSurf"></div><details class="figure-notes"><summary>응력 해석·범례</summary><div class="legend" id="surfLegend"></div></details></section>
+  </div>
   </aside>
   <div class="analysis-column">
   <nav class="tabs pro-only frow" id="tabs" role="tablist" style="display:none"></nav>
@@ -480,12 +492,6 @@ body[data-mode="pro"] .easy-only{display:none}
         <p class="hint" style="margin-top:9px">단일 변수 제안은 <b>그 값 하나만</b> 바꿔 스캔 범위에서 찾은 개선값입니다. 치수 동시 확대는 표시된 치수를 함께 바꿉니다. 주의 판정이 남을 수 있습니다.</p></div>
     </div>
     <section class="ladder" id="ladder"></section>
-    <div class="two pro-only" style="display:none">
-      <div class="card"><div class="card-h"><b>깊이 방향 응력</b><span>τ(z) · σ_z(z)</span></div>
-        <div class="fig" id="figDepth"></div><div class="legend" id="depthLegend"></div></div>
-      <div class="card"><div class="card-h"><b>표면 응력 분포</b><span>σ_x(x) · 후단 인장</span></div>
-        <div class="fig" id="figSurf"></div><div class="legend" id="surfLegend"></div></div>
-    </div>
     <div class="two">
       <div class="card"><div class="card-h"><b>하중 산출</b><span id="loadTag"></span></div>
         <div class="card-b"><div class="chainlist" id="loadChainList"></div></div></div>
@@ -1869,7 +1875,7 @@ function figPlan(c){
 
 function figDepth(c){
   const W=460,H=380,MID=176,ZP=142,BX=150,CW=150;
-  const svg=sv('svg',{viewBox:`0 0 ${W} ${H}`}); const g=sv('g'); svg.append(g);
+  const svg=sv('svg',{viewBox:`0 0 ${W} ${H}`,role:'img','aria-label':`깊이 방향 응력. 최대 전단응력 ${fmt(c.sf.tauMax,2)} MPa, 깊이 ${fmt(c.sf.zTau,2)} mm`}); const g=sv('g'); svg.append(g);
   const b=c.r.b, wT=S.wT, fT=S.fT;
   const zr=Math.max(4*b, wT*1.1, fT*2.5, .4), sd=ZP/zr;
   const wc=c.WN.c, fc=c.FN.c;
@@ -1929,7 +1935,7 @@ function figDepth(c){
 
 function figSurf(c){
   const W=460,H=330,M={l:56,r:22,t:34,b:52};
-  const svg=sv('svg',{viewBox:`0 0 ${W} ${H}`}); const g=sv('g'); svg.append(g);
+  const svg=sv('svg',{viewBox:`0 0 ${W} ${H}`,role:'img','aria-label':`표면 응력 분포. 후단 인장 ${fmt(2*c.MU.mu*c.r.pmax,2)} MPa, 허용 ${fmt(c.allow.tens,2)} MPa`}); const g=sv('g'); svg.append(g);
   const mu=c.MU.mu, p0=c.r.pmax;
   const yMax=Math.max(2*mu*p0*1.25, p0*0.4, c.allow.tens*1.4), yMin=-p0*1.12;
   const X=u=>M.l+(u+2.2)/4.4*(W-M.l-M.r), Y=v=>H-M.b-(v-yMin)/(yMax-yMin)*(H-M.t-M.b);
@@ -2247,7 +2253,7 @@ function buildUI(){
       if(value!==a.value)e.setAttribute(a.name,value);
     }));
     figureTrigger=button;$('#largeFigure').replaceChildren(copy);
-    $('#figureDialogTitle').textContent=button.dataset.enlarge==='figSection'?'접촉 단면 크게 보기':'접촉 자국 · 단부 집중 크게 보기';
+    $('#figureDialogTitle').textContent=button.getAttribute('aria-label');
     figureDialog.showModal();$('#largeFigure').scrollTo(0,0);$('#closeFigure').focus();
   });
   $('#closeFigure').onclick=()=>figureDialog.close();
@@ -2419,6 +2425,8 @@ function updateTags(c){
   const t=(id,v)=>{const e=$('#'+id); if(e)e.textContent=v;};
   t('sectionReadout',c?`최대 접촉압 ${fmt(c.r.pmax,2)} MPa · 접촉 전폭 ${fmt(2*c.r.b,2)} mm`:'계산 가능한 입력을 확인하세요.');
   t('planReadout',c?`단부 압력 ${fmt(c.pEdge,2)} MPa · 허용 ${fmt(c.allow.surf,2)} MPa`:'계산 가능한 입력을 확인하세요.');
+  t('depthReadout',c?`최대 전단 ${fmt(c.sf.tauMax,2)} MPa · 깊이 ${fmt(c.sf.zTau,2)} mm`:'계산 가능한 입력을 확인하세요.');
+  t('surfReadout',c?`후단 인장 ${fmt(2*c.MU.mu*c.r.pmax,2)} MPa · 허용 ${fmt(c.allow.tens,2)} MPa`:'계산 가능한 입력을 확인하세요.');
   t('tgLoad', c?`${fmt(c.Fop,0)} N`:'—');
   t('tgWheel',`D${S.D}×L${S.L}`);
   t('tgFloor',S.fT>0?`t ${fmt(S.fT,1)} mm`:'무도장');

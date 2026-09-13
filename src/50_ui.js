@@ -637,7 +637,7 @@ function figPlan(c){
 
 function figDepth(c){
   const W=460,H=380,MID=176,ZP=142,BX=150,CW=150;
-  const svg=sv('svg',{viewBox:`0 0 ${W} ${H}`}); const g=sv('g'); svg.append(g);
+  const svg=sv('svg',{viewBox:`0 0 ${W} ${H}`,role:'img','aria-label':`깊이 방향 응력. 최대 전단응력 ${fmt(c.sf.tauMax,2)} MPa, 깊이 ${fmt(c.sf.zTau,2)} mm`}); const g=sv('g'); svg.append(g);
   const b=c.r.b, wT=S.wT, fT=S.fT;
   const zr=Math.max(4*b, wT*1.1, fT*2.5, .4), sd=ZP/zr;
   const wc=c.WN.c, fc=c.FN.c;
@@ -697,7 +697,7 @@ function figDepth(c){
 
 function figSurf(c){
   const W=460,H=330,M={l:56,r:22,t:34,b:52};
-  const svg=sv('svg',{viewBox:`0 0 ${W} ${H}`}); const g=sv('g'); svg.append(g);
+  const svg=sv('svg',{viewBox:`0 0 ${W} ${H}`,role:'img','aria-label':`표면 응력 분포. 후단 인장 ${fmt(2*c.MU.mu*c.r.pmax,2)} MPa, 허용 ${fmt(c.allow.tens,2)} MPa`}); const g=sv('g'); svg.append(g);
   const mu=c.MU.mu, p0=c.r.pmax;
   const yMax=Math.max(2*mu*p0*1.25, p0*0.4, c.allow.tens*1.4), yMin=-p0*1.12;
   const X=u=>M.l+(u+2.2)/4.4*(W-M.l-M.r), Y=v=>H-M.b-(v-yMin)/(yMax-yMin)*(H-M.t-M.b);
@@ -1015,7 +1015,7 @@ function buildUI(){
       if(value!==a.value)e.setAttribute(a.name,value);
     }));
     figureTrigger=button;$('#largeFigure').replaceChildren(copy);
-    $('#figureDialogTitle').textContent=button.dataset.enlarge==='figSection'?'접촉 단면 크게 보기':'접촉 자국 · 단부 집중 크게 보기';
+    $('#figureDialogTitle').textContent=button.getAttribute('aria-label');
     figureDialog.showModal();$('#largeFigure').scrollTo(0,0);$('#closeFigure').focus();
   });
   $('#closeFigure').onclick=()=>figureDialog.close();
@@ -1187,6 +1187,8 @@ function updateTags(c){
   const t=(id,v)=>{const e=$('#'+id); if(e)e.textContent=v;};
   t('sectionReadout',c?`최대 접촉압 ${fmt(c.r.pmax,2)} MPa · 접촉 전폭 ${fmt(2*c.r.b,2)} mm`:'계산 가능한 입력을 확인하세요.');
   t('planReadout',c?`단부 압력 ${fmt(c.pEdge,2)} MPa · 허용 ${fmt(c.allow.surf,2)} MPa`:'계산 가능한 입력을 확인하세요.');
+  t('depthReadout',c?`최대 전단 ${fmt(c.sf.tauMax,2)} MPa · 깊이 ${fmt(c.sf.zTau,2)} mm`:'계산 가능한 입력을 확인하세요.');
+  t('surfReadout',c?`후단 인장 ${fmt(2*c.MU.mu*c.r.pmax,2)} MPa · 허용 ${fmt(c.allow.tens,2)} MPa`:'계산 가능한 입력을 확인하세요.');
   t('tgLoad', c?`${fmt(c.Fop,0)} N`:'—');
   t('tgWheel',`D${S.D}×L${S.L}`);
   t('tgFloor',S.fT>0?`t ${fmt(S.fT,1)} mm`:'무도장');

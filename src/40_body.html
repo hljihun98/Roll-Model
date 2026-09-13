@@ -41,6 +41,12 @@
     <div class="card-h"><b>접촉 자국 · 단부 집중</b><span id="planTag"></span><span class="sp"></span><button class="tbtn" data-enlarge="figPlan" aria-label="접촉 자국 크게 보기" aria-haspopup="dialog">크게 보기</button></div>
     <p class="figure-metrics" id="planReadout"></p><div class="fig" id="figPlan"></div><details class="figure-notes"><summary>분포·허용치 정보</summary><div class="legend" id="planLegend"></div></details>
   </section>
+  <div class="two pro-only stress-figures" style="display:none">
+    <section class="card" id="depthCard"><div class="card-h"><b>깊이 방향 응력</b><span>τ(z) · σ_z(z)</span><span class="sp"></span><button class="tbtn" data-enlarge="figDepth" aria-label="깊이 방향 응력 크게 보기" aria-haspopup="dialog">크게 보기</button></div>
+      <p class="figure-metrics" id="depthReadout"></p><div class="fig" id="figDepth"></div><details class="figure-notes"><summary>응력 해석·범례</summary><div class="legend" id="depthLegend"></div></details></section>
+    <section class="card" id="surfCard"><div class="card-h"><b>표면 응력 분포</b><span>σ_x(x) · 후단 인장</span><span class="sp"></span><button class="tbtn" data-enlarge="figSurf" aria-label="표면 응력 분포 크게 보기" aria-haspopup="dialog">크게 보기</button></div>
+      <p class="figure-metrics" id="surfReadout"></p><div class="fig" id="figSurf"></div><details class="figure-notes"><summary>응력 해석·범례</summary><div class="legend" id="surfLegend"></div></details></section>
+  </div>
   </aside>
   <div class="analysis-column">
   <nav class="tabs pro-only frow" id="tabs" role="tablist" style="display:none"></nav>
@@ -52,12 +58,6 @@
         <p class="hint" style="margin-top:9px">단일 변수 제안은 <b>그 값 하나만</b> 바꿔 스캔 범위에서 찾은 개선값입니다. 치수 동시 확대는 표시된 치수를 함께 바꿉니다. 주의 판정이 남을 수 있습니다.</p></div>
     </div>
     <section class="ladder" id="ladder"></section>
-    <div class="two pro-only" style="display:none">
-      <div class="card"><div class="card-h"><b>깊이 방향 응력</b><span>τ(z) · σ_z(z)</span></div>
-        <div class="fig" id="figDepth"></div><div class="legend" id="depthLegend"></div></div>
-      <div class="card"><div class="card-h"><b>표면 응력 분포</b><span>σ_x(x) · 후단 인장</span></div>
-        <div class="fig" id="figSurf"></div><div class="legend" id="surfLegend"></div></div>
-    </div>
     <div class="two">
       <div class="card"><div class="card-h"><b>하중 산출</b><span id="loadTag"></span></div>
         <div class="card-b"><div class="chainlist" id="loadChainList"></div></div></div>

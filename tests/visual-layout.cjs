@@ -18,16 +18,26 @@ withBrowser(async(browser,url)=>{
         assert.ok(boxes.plan.y>boxes.section.y&&Math.abs(boxes.plan.x-boxes.section.x)<2);
       }else assert.ok(boxes.section.y>boxes.input.y+boxes.input.height);
       assert.ok(boxes.sectionSvg.height<=341&&boxes.planSvg.height<=231);
+      assert.equal(await p.locator('.stress-figures').isVisible(),mode==='pro');
+      if(mode==='pro'){
+        for(const id of ['figDepth','figSurf']){
+          assert.equal(await p.locator(`.visual-column #${id} svg`).count(),1);
+          const stress=await p.locator(`#${id} svg`).boundingBox();assert.ok(stress.height<=261);
+          if(boxes.main.width>=960)assert.ok(stress.x>=boxes.input.x+boxes.input.width);
+        }
+      }
     }
     console.log(`PASS ${width}px split/stack layout, bounded drawings, both modes, no overflow`);
   }
   for(const width of [1440,430]){
     await p.setViewportSize({width,height:900});await p.click('#mEasy');
-    for(const id of ['figSection','figPlan']){
+    for(const id of ['figSection','figPlan','figDepth','figSurf']){
+      if(id==='figDepth')await p.click('#mPro');
       const trigger=p.locator(`[data-enlarge="${id}"]`);await trigger.click();
       assert.equal(await p.locator('#figureDialog').isVisible(),true);
       const large=await p.locator('#largeFigure svg').boundingBox();assert.ok(large.width>=800);
       assert.ok(await p.locator('#largeFigure svg').getAttribute('aria-label'));
+      assert.equal(await p.locator('#figureDialogTitle').textContent(),await trigger.getAttribute('aria-label'));
       assert.equal(await p.evaluate(()=>{const ids=[...document.querySelectorAll('[id]')].map(e=>e.id);return ids.length===new Set(ids).size;}),true,'zoom must not duplicate SVG IDs');
       for(let i=0;i<4;i++){await p.keyboard.press('Tab');assert.equal(await p.evaluate(()=>document.querySelector('#figureDialog').contains(document.activeElement)),true);}
       if(id==='figSection')await p.keyboard.press('Escape');else await p.click('#closeFigure');
