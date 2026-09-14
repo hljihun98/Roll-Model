@@ -1,12 +1,12 @@
 /* ============================================================================
-   STATE — 기본값은 주차로봇 대차 조건(승용차 적재)에 맞춰 잡았다.
+   STATE — 기본값은 주차로봇(로봇 400 kg) + 승용차 적재, 2열 × 2행 4점 접지 조건이다.
    ========================================================================= */
 const DEFAULTS = {
   mode:'easy', tab:'chain',
 
   /* 하중 */
   loadMode:'build', Fdirect:6343.83,
-  Wtare:900, Wload:1600, g:9.81,
+  Wtare:400, Wload:1600, g:9.81,
   nRow:2, nCol:2, wb:2600, tr:1400, ex:150, ey:50,
   supportMode:'all', liftedWheel:0,
   k3:1.15, ax:1.0, ay:1.0, hcg:400,
@@ -38,20 +38,21 @@ const DEFAULTS = {
   bearingAreaRatio:1, bareBondFactor:0.5,
 };
 
+/* 시나리오는 로봇 중량과 적재하중(차량)만 구분하고, 모두 2열 × 2행 4점 접지로 시작한다. */
 const SCENARIOS = {
-  park_sedan:{n:'주차로봇 · 승용차', d:'1.6 t 차량 + 0.9 t 대차 · 4휠 · 에폭시 라이닝',
-    p:{loadMode:'build',Wtare:900,Wload:1600,nRow:2,nCol:2,wb:2600,tr:1400,ex:150,ey:50,hcg:400,
+  park_sedan:{n:'승용차 주차', d:'로봇 400 kg + 차량 1,600 kg',
+    p:{loadMode:'build',Wtare:400,Wload:1600,nRow:2,nCol:2,wb:2600,tr:1400,ex:150,ey:50,hcg:400,
        wPre:'pu95',D:200,L:80,edgeR:2,crown:0,fPre:'lin3',v:1.0,duty:.5,maneuver:'drive'}},
-  park_suv:{n:'주차로봇 · SUV', d:'2.4 t 차량 + 1.1 t 대차 · 8휠 · Vulkollan급',
-    p:{loadMode:'build',Wtare:1100,Wload:2400,nRow:4,nCol:2,wb:2800,tr:1500,ex:200,ey:80,hcg:450,
+  park_suv:{n:'SUV 주차', d:'로봇 400 kg + 차량 2,400 kg',
+    p:{loadMode:'build',Wtare:400,Wload:2400,nRow:2,nCol:2,wb:2800,tr:1500,ex:200,ey:80,hcg:450,
        wPre:'puv',D:250,L:90,edgeR:2.5,crown:0,fPre:'lin6',v:0.8,duty:.5,maneuver:'drive'}},
-  spin:{n:'제자리 선회 검토', d:'승용차 조건에서 스핀 턴 — 도막 박리 지배 케이스',
-    p:{loadMode:'build',Wtare:900,Wload:1600,nRow:2,nCol:2,wb:2600,tr:1400,ex:150,ey:50,hcg:400,
+  spin:{n:'승용차 제자리 선회', d:'로봇 400 kg + 차량 1,600 kg',
+    p:{loadMode:'build',Wtare:400,Wload:1600,nRow:2,nCol:2,wb:2600,tr:1400,ex:150,ey:50,hcg:400,
        wPre:'pu95',D:200,L:80,edgeR:2,crown:0,fPre:'coat',v:0.3,duty:.2,maneuver:'spin',ax:0}},
-  agv:{n:'소형 물류 AGV', d:'1 t급 · 4휠 · 박막 에폭시 코팅',
-    p:{loadMode:'build',Wtare:300,Wload:1000,nRow:2,nCol:2,wb:900,tr:700,ex:60,ey:40,hcg:300,
+  agv:{n:'소형 물류 AMR', d:'로봇 400 kg + 적재 1,000 kg',
+    p:{loadMode:'build',Wtare:400,Wload:1000,nRow:2,nCol:2,wb:900,tr:700,ex:60,ey:40,hcg:300,
        wPre:'pu95',D:125,L:50,edgeR:1.5,crown:0,fPre:'coat',v:1.5,duty:.7,maneuver:'drive'}},
-  legacy:{n:'원본 프로그램 검증', d:'D80×L40 · 646.67 kg/캐스터 · 무도장 · 모든 신규 보정 OFF',
+  legacy:{n:'원본 프로그램 검증', d:'캐스터당 646.67 kg 직접 입력 · 회귀 기준점',
     p:{loadMode:'direct',Fdirect:6343.83,D:80,L:40,edgeR:0,crown:0,R2:0,wPre:'pu95',nuOv:0,
        fPre:'bare',fck:30,EcMan:30000,v:0,duty:0,confine:false,layer:false,K0:1,edgeAllow:1,
        kSauto:false,kS:1,k3:1,maneuver:'spin'}},

@@ -164,7 +164,16 @@ function edgeFactor(Re,b,K0,decay=3){
 /* 등강성 지지점 위 강체: R_i = W[1/n + e_x·x_i/Σx² + e_y·y_i/Σy²]
    가감속·선회 하중이동은 등가편심 e_dyn = (a/g)·h_cg 로 정확히 환산되므로
    기하편심과 같은 식에 합산한다. */
+/* 3점 접지 로봇(PARKIE형): 틸팅 구동부 2개가 전후(x)로 wb 간격, 캐스터 1개는 전후 중앙에서
+   구동부 축선으로부터 좌우(y)로 tr 떨어져 있다. 틸팅 구동부의 두 바퀴는 접지점 1개로 본다.
+   원점은 세 접지점의 도심이므로 편심 0이면 세 점이 1/3씩 분담한다. */
+function triangleGrid(S){
+  const xs=[-S.wb/2, S.wb/2, 0], ys=[-S.tr/3, -S.tr/3, 2*S.tr/3];
+  return {nr:2, nc:2, n:3, tri:true, xs, ys, names:['구동부 A','구동부 B','캐스터'],
+          sx:xs.reduce((a,v)=>a+v*v,0), sy:ys.reduce((a,v)=>a+v*v,0)};
+}
 function wheelGrid(S){
+  if(S.supportMode==='tri') return triangleGrid(S);
   const nr=Math.max(Math.round(S.nRow),1), nc=Math.max(Math.round(S.nCol),1);
   const xs=[], ys=[];
   for(let i=0;i<nr;i++) for(let j=0;j<nc;j++){
@@ -183,20 +192,20 @@ function loadChain(S){
   }
   const W = S.Wtare + S.Wload;
   const G = wheelGrid(S);
-  rows.push({k:'총 질량 (공차 + 적재)', v:W, u:'kg'});
-  rows.push({k:`휠 배치  ${G.nr}열(전후) × ${G.nc}행(좌우)`, v:G.n, u:'EA'});
+  rows.push({k:'총 질량 (로봇 + 적재)', v:W, u:'kg'});
+  rows.push({k:G.tri?'3점 접지  구동부 2(전후) + 캐스터 1':`휠 배치  ${G.nr}열(전후) × ${G.nc}행(좌우)`, v:G.n, u:'EA'});
 
   const exd = (S.ax/S.g)*S.hcg, eyd = (S.ay/S.g)*S.hcg;   // 동적 등가편심
   const exq = S.ex + exd, eyq = S.ey + eyd;
   if(exd||eyd) rows.push({k:`동하중 등가편심  eₓ +${exd.toFixed(0)} / e_y +${eyd.toFixed(0)}`,
                           v:Math.hypot(exd,eyd), u:'mm', src:'rigid',
                           sub:`e_dyn = (a/g)·h_cg — 가감속·선회 하중이동은 편심과 수학적으로 동일`});
-  const three=S.supportMode==='three';
-  const active=G.xs.map((_,i)=>i).filter(i=>!three||i!==S.liftedWheel);
+  const lifted=S.supportMode==='three', three=lifted||G.tri;
+  const active=G.xs.map((_,i)=>i).filter(i=>!lifted||i!==S.liftedWheel);
   let fr;
   if(three){
-    // Normalize coordinates before barycentric evaluation; the rectangle's
-    // three remaining corners always form a nondegenerate triangle.
+    // Normalize coordinates before barycentric evaluation; both the rectangle's
+    // three remaining corners and the drive-unit/caster triangle are nondegenerate.
     const [a,b,c]=active, x=G.xs.map(v=>v/S.wb), y=G.ys.map(v=>v/S.tr);
     const px=exq/S.wb, py=eyq/S.tr;
     const det=(y[b]-y[c])*(x[a]-x[c])+(x[c]-x[b])*(y[a]-y[c]);
@@ -204,12 +213,13 @@ function loadChain(S){
     fr[a]=((y[b]-y[c])*(px-x[c])+(x[c]-x[b])*(py-y[c]))/det;
     fr[b]=((y[c]-y[a])*(px-x[c])+(x[a]-x[c])*(py-y[c]))/det;
     fr[c]=1-fr[a]-fr[b];
-    rows.push({k:`3점 접지 · ${S.liftedWheel+1}번 비접지`,v:active.length,u:'EA',src:'three'});
+    rows.push({k:G.tri?'정정 3점 지지 · 원점 = 접지 삼각형 도심':`3점 접지 · ${S.liftedWheel+1}번 비접지`,v:active.length,u:'EA',src:'three'});
   }else fr=G.xs.map((x,i)=> 1/G.n + (G.sx>0? exq*x/G.sx:0) + (G.sy>0? eyq*G.ys[i]/G.sy:0));
   const fracMax = Math.max(...active.map(i=>fr[i])), fracMin = Math.min(...active.map(i=>fr[i]));
   const lift=fracMin < -1e-10, marginal=three&&!lift&&fracMin<=1e-10;
   const source=three?'three':'rigid';
-  const expr=three?'Σr_i = 1; Σr_i·x_i = eₓ; Σr_i·y_i = e_y; 비접지 r = 0'
+  const expr=G.tri?'Σr_i = 1; Σr_i·x_i = eₓ; Σr_i·y_i = e_y; 구동부 (∓wb/2, −tr/3), 캐스터 (0, 2tr/3)'
+    :three?'Σr_i = 1; Σr_i·x_i = eₓ; Σr_i·y_i = e_y; 비접지 r = 0'
     :`1/${G.n} + e_x·x_i/Σx² + e_y·y_i/Σy²  (Σx²=${G.sx.toFixed(0)}, Σy²=${G.sy.toFixed(0)} mm²)`;
   rows.push({k:'최대 휠 분담률', v:fracMax, u:'×', src:source, sub:expr});
   if(lift) rows.push({k:'최소 휠 분담률 — 음수, 지지 불가', v:fracMin, u:'×', bad:true});

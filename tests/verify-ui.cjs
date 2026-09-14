@@ -14,8 +14,8 @@ withBrowser(async(browser,url)=>{
     return {length:+line.getAttribute('y2')-+line.getAttribute('y1'),pressure:+line.dataset.pressure,
       scale:+line.parentNode.dataset.scale,F:C.Fpk,p:C.r.pmax,depth:+document.querySelector('[data-detail-floor]').getAttribute('height')};
   });
-  await p.fill('#Lr','40');const narrow=await pressureArrow();
-  await p.fill('#Lr','120');const wide=await pressureArrow();
+  await p.fill('#sL','40');const narrow=await pressureArrow();
+  await p.fill('#sL','120');const wide=await pressureArrow();
   assert.equal(wide.F,narrow.F);assert.equal(wide.scale,narrow.scale);
   assert.ok(wide.pressure<narrow.pressure);assert.ok(wide.length<narrow.length);
   assert.ok(Math.abs(wide.length/narrow.length-wide.pressure/narrow.pressure)<1e-8);

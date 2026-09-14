@@ -80,8 +80,9 @@ function computeCore(S, opts={}){
   const th   = operating?.th || thermal(S, {alpha:W.alpha, Tmax:W.Tmax}, rop, Fop);
   if(![th.T,th.P,th.Prr,th.Rth,th.f].every(Number.isFinite))
     return {error:'입력 범위에서 유한한 정상상태 열해를 계산할 수 없습니다.',errs:['열해 범위 초과'],S};
-  const Fth  = operating ? operating.Fth : thermalAllow(S, W, rop, Fop, th, solveAt);
-  if(!(Fth>=0)||(!Number.isFinite(Fth)&&th.dT>0)) return {error:'열 허용하중을 수렴 범위에서 찾지 못했습니다.',errs:['열 역산 미수렴'],S};
+  /* opts.fast: 판정·이용률에 쓰이지 않는 열 허용하중 역산(이분법)을 건너뛴다. 탐색용이며 Fth는 NaN이다. */
+  const Fth  = operating ? operating.Fth : opts.fast ? NaN : thermalAllow(S, W, rop, Fop, th, solveAt);
+  if(!opts.fast&&(!(Fth>=0)||(!Number.isFinite(Fth)&&th.dT>0))) return {error:'열 허용하중을 수렴 범위에서 찾지 못했습니다.',errs:['열 역산 미수렴'],S};
   const Tdes = Math.min(th.T, W.Tmax);                       // 허용온도까지만 저감
   const kTd  = clamp(1 - W.kT*(Tdes-23), 0.4, 1);
 
@@ -113,7 +114,7 @@ function computeCore(S, opts={}){
       :unsupported?'한 줄 지지점으로 편심 모멘트를 받을 수 없습니다. 지지 배치를 수정하십시오.'
       :LC.marginal?'합력 작용점이 지지 삼각형 경계에 있어 추가 바퀴 반력이 0입니다. 전도 여유가 없는 한계 상태입니다.'
       :S.loadMode==='direct'?'직접 입력 — 하중 분배 검토는 입력값 산정 과정에서 별도로 확인하십시오.'
-      :S.supportMode==='three'?'선택한 비접지 바퀴를 제외한 3점의 반력이 양수이며 힘·모멘트 평형을 만족합니다.':'모든 휠 반력이 음수가 아니며 편심 모멘트를 지지할 배치입니다.',
+      :S.supportMode==='tri'?'구동부 2개와 캐스터의 반력이 모두 양수이며 힘·모멘트 평형을 만족합니다.':S.supportMode==='three'?'선택한 비접지 바퀴를 제외한 3점의 반력이 양수이며 힘·모멘트 평형을 만족합니다.':'모든 휠 반력이 음수가 아니며 편심 모멘트를 지지할 배치입니다.',
     rat:{expr:LC.expr||'직접 입력 F_op',subs:`최소 분담률 = ${LC.fracMin.toFixed(6)}`,src:LC.source||'rigid',
       note:'휠 들림 또는 지지 불가능한 모멘트는 종합 판정·조합 비교·개선안에 모두 불가로 반영합니다.'}};
   G.model={stage:2,sym:'모델 적용',title:'접촉·층상 모델 적용성',v:0,lim:'검증된 적용 범위',
@@ -243,15 +244,15 @@ function computeCore(S, opts={}){
 }
 
 /* 단차 충격계수 자동 산정 — 1차 해에서 접촉강성을 얻어 2차 해에 반영 */
-function compute(S){
+function compute(S, opts={}){
   const errs=validateState(S);
   if(errs.length) return {error:errs[0],errs,S};
-  if(!S.kSauto || S.loadMode==='direct') return computeCore(S);
-  const p1 = computeCore({...S, kS:1});
+  if(!S.kSauto || S.loadMode==='direct') return computeCore(S, opts);
+  const p1 = computeCore({...S, kS:1}, opts);
   if(!p1.ok) return p1;
   const imp = stepImpact(S, p1.Fop, p1.rop.delta);
   const phi = clamp(imp.phi, 1, S.impactMax);
-  const p2  = phi===1?p1:computeCore({...S, kS:phi},{operating:p1});
+  const p2  = phi===1?p1:computeCore({...S, kS:phi},{...opts, operating:p1});
   if(p2.ok){ p2.imp = imp; p2.kSused = phi;
     if(imp.phi>S.impactMax){
       const gate=p2.G.load; gate.s='bad'; gate.why=`충격계수 ${imp.phi.toFixed(2)}가 설정 상한 ${S.impactMax}를 넘습니다. 상한으로 자른 참고값을 설계에 사용할 수 없습니다.`;
@@ -261,6 +262,15 @@ function compute(S){
     }
   }
   return p2;
+}
+
+/* 탐색용 통과 판정: 빠른 계산이 불가가 아니면 전체 계산으로 다시 확인한다.
+   빠른 계산의 불가·오류는 전체 계산에서도 같으므로 결과는 전체 계산만 쓴 탐색과 동일하다. */
+function passesDesign(T){
+  const quick=compute(T,{fast:true});
+  if(!quick.ok||quick.worst==='bad') return null;
+  const full=compute(T);
+  return full.ok&&full.worst!=='bad'?full:null;
 }
 
 /* 치수 동시 확대 — suggest() 의 스캔과 UI 의 적용이 같은 값을 쓰도록 한 곳에 둔다 */
@@ -282,8 +292,7 @@ function suggest(S){
   const items=[];
   const scan=(key, seq, label, unit, dec)=>{
     for(const v of seq){
-      const c = compute({...S,[key]:v});
-      if(c.ok && c.worst!=='bad'){ items.push({key,label,from:S[key],to:v,unit,dec}); return; }
+      if(passesDesign({...S,[key]:v})){ items.push({key,label,from:S[key],to:v,unit,dec}); return; }
     }
   };
   const up   =(f,t,n)=>Array.from({length:n},(_,i)=>f+(t-f)*(i+1)/n);
@@ -301,8 +310,8 @@ function suggest(S){
   let scale=null;
   for(let i=1;i<=80;i++){
     const k = 1 + i*0.05, g = scaledGeom(S,k);
-    const c = compute({...S, ...g});
-    if(c.ok && c.worst!=='bad'){ scale={k, ...g, worst:c.worst}; break; }
+    const c = passesDesign({...S, ...g});
+    if(c){ scale={k, ...g, worst:c.worst}; break; }
   }
   return {items, scale};
 }
@@ -315,7 +324,7 @@ function diameterCandidate(S,L){
   const samples=Array.from({length:49},(_,i)=>loD*Math.pow(hiD/loD,i/48));
   if(S.D>=loD&&S.D<=hiD)samples.push(S.D);
   samples.sort((a,b)=>a-b);
-  const passes=D=>{const c=compute({...S,D,L});return c.ok&&c.worst!=='bad';};
+  const passes=D=>!!passesDesign({...S,D,L});
   let previous=loD;
   for(const D of samples){
     if(passes(D)){

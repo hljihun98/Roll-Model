@@ -151,15 +151,21 @@ console.log('\n─── I. 상태·배선 정합성 ───');
   const RP=__dirname+'/../src';
   const ui=require('fs').readFileSync(RP+'/50_ui.js','utf8');
   const body=require('fs').readFileSync(RP+'/40_body.html','utf8');
-  const nums=(ui.match(/const NUMS=\[([\s\S]*?)\];/)||[])[1].match(/'([^']+)'/g).map(x=>x.slice(1,-1));
-  const inputIds=[...ui.matchAll(/id="([A-Za-z0-9_]+)"[^>]*type="number"/g)].map(m=>m[1])
-    .concat([...ui.matchAll(/type="number"[^>]*id="([A-Za-z0-9_]+)"/g)].map(m=>m[1]));
-  const missing = nums.filter(k=>!(k in DEFAULTS));
-  const noInput = nums.filter(k=>!inputIds.includes(k) && !['v','duty'].includes(k));
-  const orphanInputs = inputIds.filter(i=>!nums.includes(i) && !['calF','calV','calD','calL','rthScale'].includes(i));
-  ok('NUMS 의 모든 키가 상태에 존재', missing.length===0); if(missing.length) console.log('    누락:',missing);
-  ok('NUMS 의 모든 키에 입력 필드 존재', noInput.length===0); if(noInput.length) console.log('    입력없음:',noInput);
+  // 입력 필드는 INPUTS 메타데이터로 생성한다. 숫자 입력은 fl/qf/slideFld 호출로 배치된다.
+  const nums=Object.keys(INPUTS).filter(k=>typeof DEFAULTS[k]==='number'&&k!=='liftedWheel');
+  const placed=new Set();
+  for(const m of ui.matchAll(/\b(?:fl|qf|slideFld)\(([^)]*)\)/g)) for(const x of m[1].matchAll(/'([A-Za-z0-9_]+)'/g)) placed.add(x[1]);
+  for(const m of ui.matchAll(/\[((?:'[A-Za-z0-9_]+',?)+)\]\.map\(qf\)/g)) for(const x of m[1].matchAll(/'([A-Za-z0-9_]+)'/g)) placed.add(x[1]);
+  const staticIds=[...ui.matchAll(/type="number" id="([A-Za-z0-9_]+)"/g)].map(m=>m[1]);
+  const missing = Object.keys(INPUTS).filter(k=>!(k in DEFAULTS));
+  const unclassified = Object.keys(DEFAULTS).filter(k=>!(k in INPUTS)&&!['mode','tab','g','alphaScale','calF','calV','calD','calL'].includes(k));
+  const noInput = nums.filter(k=>!placed.has(k) && k!=='rthScale');
+  const orphanInputs = staticIds.filter(i=>!['calF','calV','calD','calL','rthScale'].includes(i));
+  ok('INPUTS 의 모든 키가 상태에 존재', missing.length===0); if(missing.length) console.log('    누락:',missing);
+  ok('상태의 모든 사용자 입력이 중요도 분류됨', unclassified.length===0); if(unclassified.length) console.log('    미분류:',unclassified);
+  ok('숫자 입력마다 입력 필드 존재', noInput.length===0); if(noInput.length) console.log('    입력없음:',noInput);
   ok('배선 안 된 입력 필드 없음', orphanInputs.length===0); if(orphanInputs.length) console.log('    미배선:',orphanInputs);
+  ok('모든 입력에 영향도·단계·도움말', Object.values(INPUTS).every(m=>IMPACT[m.i]&&TIERS[m.t]&&m.h));
   const unusedState=Object.keys(DEFAULTS).filter(k=>{
     const re=new RegExp(`[S.]${k}\\b|'${k}'|"${k}"|\\b${k}:`);
     const src=require('fs').readFileSync(RP+'/30_engine.js','utf8')
@@ -236,9 +242,13 @@ console.log('\n─── L. 개선 제안이 실제로 판정을 바꾸는가 �
       ok(`${key} · 치수 ×${f(k,2)} 적용 후 불가 해소`, (c=>c.ok&&c.worst!=='bad')(compute({...St,...geom})));
       ok(`${key} · scaledGeom 재현성 (스캔=적용)`,
          JSON.stringify(scaledGeom(St,k))===JSON.stringify(geom)); }
-    // 제안 직전 값은 여전히 불가여야 (최소치가 맞는지)
+    // 제안 직전 스캔점은 여전히 불가여야 (최소치가 맞는지). 스캔 간격은 suggest()의 키별 범위·분할과 같다.
+    const scanOf={D:[Math.min(St.D*8,1200),70],L:[Math.min(St.L*6,500),60],Wload:[0,50],Fdirect:[St.Fdirect*0.05,50],
+      v:[0.05,45],duty:[0.05,30],fT:[15,45],edgeR:[Math.max(St.L*0.25,10),40]};
     for(const it of sg.items){
-      const step=(it.to-it.from)/60, just=compute({...St,[it.key]:it.to-step*1.2});
+      const [end,n]=scanOf[it.key], step=(end-it.from)/n;
+      const prev=it.to-step, just=compute({...St,[it.key]:prev});
+      if(Math.abs(prev-it.from)<Math.abs(step)*1e-9) continue;
       ok(`${key} · ${it.label} 최소치 근방에서는 아직 불가`, !just.ok || just.worst==='bad');
     }
   }

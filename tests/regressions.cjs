@@ -128,3 +128,75 @@ test('invalid support selections cannot enter the engine or imported settings',(
   }
   near(run({loadMode:'direct',supportMode:'three',nRow:4,Fdirect:6000}).Fop,6000);
 });
+
+/* 3점 접지 로봇: 전후 틸팅 구동부 2개 + 전후 중앙의 캐스터 1개(구동부 축선에서 좌우 tr) */
+test('drive-unit/caster triangle satisfies statics with the centroid as origin',()=>{
+  const base={supportMode:'tri',nRow:3,nCol:1,wb:1800,tr:900,ax:0,ay:0,kSauto:false,kS:1};
+  const center=run({...base,ex:0,ey:0});assert.ok(center.ok);
+  assert.equal(center.LC.supportCount,3);assert.equal(center.LC.grid.tri,true);
+  center.LC.fractions.forEach(r=>near(r,1/3));near(center.Fop,(center.LC.W*9.81)/3);
+  assert.equal(center.G.load.s,'ok');assert.equal(center.LC.flatFactor,1);
+  near(run({...base,ex:0,ey:0,k3:3}).Fop,center.Fop);
+  const xs=[-900,900,0],ys=[-300,-300,600];
+  for(const [ex,ey] of [[200,100],[-400,-150],[0,500],[850,-290]]){
+    const c=run({...base,ex,ey}),fr=c.LC.fractions;
+    near(fr.reduce((a,r)=>a+r,0),1);near(fr.reduce((a,r,i)=>a+r*xs[i],0),ex);near(fr.reduce((a,r,i)=>a+r*ys[i],0),ey);
+  }
+  const edge=run({...base,ex:0,ey:-300});assert.equal(edge.G.load.s,'warn');near(edge.LC.fractions[2],0,1e-9);
+  const out=run({...base,ex:0,ey:-400});assert.equal(out.G.load.s,'bad');assert.ok(out.LC.fracMin<0);
+  const dyn=run({...base,ex:0,ey:100,ay:1,hcg:500}),eq=run({...base,ex:0,ey:100+500/9.81});
+  dyn.LC.fractions.forEach((r,i)=>near(r,eq.LC.fractions[i]));
+  const s=mk({...base,ex:120,ey:60});near(e.compute(e.importState(JSON.parse(JSON.stringify(s)))).Fop,e.compute(s).Fop);
+  assert.ok(!e.inputRelevant('nRow',s)&&!e.inputRelevant('k3',s)&&e.inputRelevant('wb',s));
+});
+
+/* 입력 중요도 · 값 출처 · 결과 신뢰도 — 계산식은 바꾸지 않는 UI 보조 계층 */
+const scen=k=>{const s=mk();const p=e.SCENARIOS[k].p;e.applyWheel(s,p.wPre);e.applyFloor(s,p.fPre);return Object.assign(s,p);};
+test('scenarios are robot weight plus vehicle load on a four-wheel layout',()=>{
+  for(const [k,sc] of Object.entries(e.SCENARIOS)){
+    if(sc.p.loadMode==='direct') continue;
+    assert.equal(sc.p.nRow*sc.p.nCol,4,k);assert.match(sc.d,/로봇 [\d,]+ kg \+ (차량|적재) [\d,]+ kg/);
+    assert.ok(e.compute(scen(k)).ok,k);
+  }
+});
+test('every user input is classified with impact, tier and help',()=>{
+  const internal=['mode','tab','g','alphaScale','calF','calV','calD','calL'];
+  for(const k of Object.keys(e.DEFAULTS)) if(!internal.includes(k)) assert.ok(e.INPUTS[k],`unclassified ${k}`);
+  for(const [k,m] of Object.entries(e.INPUTS)){assert.ok(k in e.DEFAULTS,k);assert.ok(e.IMPACT[m.i]&&['req','imp','exp'].includes(m.t)&&m.h,k);}
+  const req=Object.keys(e.INPUTS).filter(k=>e.INPUTS[k].t==='req');
+  for(const k of ['Wtare','Wload','nRow','nCol','wb','tr','wPre','D','L','fPre','v','maneuver']) assert.ok(req.includes(k),k);
+  for(const k of ['hcg','ax','duty','Tamb','edgeR','wE','fT']) assert.equal(e.INPUTS[k].t,'imp',k);
+  for(const k of ['k3','K0','etaImp','hNat','kGent','brW']) assert.equal(e.INPUTS[k].t,'exp',k);
+});
+test('blank required inputs stop the calculation; defaults come from the selected preset',()=>{
+  assert.deepEqual([...e.missingInputs(mk({D:NaN}))],['D']);
+  assert.deepEqual([...e.missingInputs(mk({SF:NaN}))],['SF']);
+  assert.deepEqual([...e.missingInputs(mk({hcg:NaN}))],[]);
+  assert.deepEqual([...e.missingInputs(mk({loadMode:'direct',Wload:NaN}))],[]);
+  const s=mk();e.applyWheel(s,'pa6');assert.equal(e.defaultValueFor(s,'wE'),2800);assert.equal(e.defaultValueFor(s,'hcg'),400);
+  const f=mk();e.applyFloor(f,'lin6');assert.equal(e.defaultValueFor(f,'fT'),6);
+});
+test('sensitivity reruns the unchanged model one input at a time without mutating state',()=>{
+  const s=scen('park_sedan'),before=JSON.stringify(s),base=e.compute(s),sens=e.sensitivity(s,base);
+  assert.equal(JSON.stringify(s),before);assert.ok(sens.items.length>=5);
+  for(let i=1;i<sens.items.length;i++) assert.ok(sens.items[i-1].mag>=sens.items[i].mag);
+  const D=sens.items.find(r=>r.k==='D'),up=e.compute({...s,D:s.D*1.1});
+  near(D.p[1],up.r.pmax/base.r.pmax-1);
+  const ratio=c=>e.checkRatios(c)[sens.focus];near(D.d[1],ratio(up)/ratio(base)-1);
+  assert.ok(sens.items.slice(0,5).some(r=>['D','L','W','wE','wT','wNu'].includes(r.k)));
+});
+test('result confidence combines input sources with model applicability',()=>{
+  const s=scen('park_sedan'),c=e.compute(s);
+  const all=v=>e.initialSources(v);
+  assert.equal(e.inputQuality(s,all('default'),c).grade,'D');
+  const user=e.inputQuality(s,all('user'),c),maker=e.inputQuality(s,all('manufacturer'),c);
+  assert.ok(user.score>e.inputQuality(s,all('default'),c).score);assert.ok(maker.score>=user.score);
+  assert.equal(maker.inputGrade,'A');assert.equal(maker.grade,maker.modelGrade);
+  const onlyReq=all('default');for(const k of Object.keys(e.INPUTS)) if(e.INPUTS[k].t==='req') onlyReq[k]='user';
+  const q=e.inputQuality(s,onlyReq,c);assert.notEqual(q.inputGrade,'D');assert.equal(q.reqDefault.length,0);assert.ok(q.important.includes('wT'));
+  const ell={...s,wPre:'pa6',wE:2800,wNu:.39,wT:0,crown:120,D:150,L:60};
+  assert.ok(['C','D'].includes(e.inputQuality(ell,all('measured'),e.compute(ell)).grade));
+  const imported=e.importSources({_sources:{D:'measured',wE:'bogus'}},s);
+  assert.equal(imported.D,'measured');assert.equal(imported.wE,'default');
+  const legacy=e.importSources({},{...s,D:321});assert.equal(legacy.D,'user');assert.equal(legacy.hcg,'default');
+});

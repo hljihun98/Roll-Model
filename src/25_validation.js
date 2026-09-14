@@ -8,7 +8,7 @@ function validateState(S){
   }
   if(errs.length) return errs;
   const choices={wPre:Object.keys(WHEELS),fPre:Object.keys(FLOORS),mode:['easy','pro'],
-    tab:['chain','thermal','matrix','reverse','sources'],loadMode:['build','direct'],maneuver:['drive','spin','manual'],supportMode:['all','three']};
+    tab:['chain','thermal','matrix','reverse','sources'],loadMode:['build','direct'],maneuver:['drive','spin','manual'],supportMode:['all','tri','three']};
   for(const [k,vs] of Object.entries(choices)) if(!vs.includes(S[k])) errs.push(`${k}: 지원하지 않는 값입니다.`);
   const positive=['D','L','wE','wPa','wTen','fck','g','wb','tr','calF','calV','calD','calL',
     'alphaScale','rthScale','brW','brF','ttW','ttF','tbW','tbF','arW','arF','edgeDecay','impactMax','unconfWarn','unconfBad'];

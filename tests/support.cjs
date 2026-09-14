@@ -25,7 +25,15 @@ withBrowser(async(browser,url)=>{
     await p.fill('#nRow','3');assert.equal(await p.evaluate(()=>!!C),false);
     assert.equal(await p.locator('#supportReadout').textContent(),'—');
     await p.fill('#nRow','2');assert.equal(await p.evaluate(()=>C.LC.supportCount),3);
+    await p.selectOption('#supportMode','tri');
+    assert.equal(await p.locator('#triSettings').isVisible(),true);assert.equal(await p.locator('#threeSettings').isVisible(),false);
+    assert.equal(await p.locator('label[for=wb]').textContent(),'구동부 간격 (전후)');
+    assert.equal(await p.locator('.support-grid>span').count(),3);
+    assert.match(await p.locator('#supportReadout').textContent(),/캐스터/);
+    assert.equal(await p.evaluate(()=>C.LC.grid.tri&&C.LC.supportCount),3);
+    assert.equal(await p.locator('#k3').isDisabled(),true);
     await p.selectOption('#supportMode','all');assert.equal(await p.locator('#k3').isDisabled(),false);
+    assert.equal(await p.locator('label[for=wb]').textContent(),'축거 (전후)');
     await p.selectOption('#scen','park_sedan');
     assert.equal(await p.evaluate(()=>S.nRow*S.nCol),4);
     assert.equal(await p.evaluate(()=>S.supportMode),'all');

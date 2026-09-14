@@ -9,7 +9,7 @@ withBrowser(async(b,url)=>{
   await step('상세 모드', ()=>p.click('#mPro'));
   for(const t of ['thermal','matrix','reverse','sources','chain'])
     await step('탭 '+t, ()=>p.click(`#tabs button[data-tab="${t}"]`));
-  await step('시나리오 AGV', ()=>p.selectOption('#scen','agv'));
+  await step('시나리오 AMR', ()=>p.selectOption('#scen','agv'));
   await step('시나리오 선회', ()=>p.selectOption('#scen','spin'));
   await step('시나리오 legacy', ()=>p.selectOption('#scen','legacy'));
   await step('시나리오 SUV', ()=>p.selectOption('#scen','park_suv'));

@@ -7,7 +7,7 @@
     "build:check": "node scripts/build.cjs --check",
     "start": "node scripts/serve.cjs",
     "test": "node tests/physics.cjs && node --test tests/regressions.cjs tests/build.test.cjs",
-    "test:ui": "node tests/smoke.cjs && node tests/verify-ui.cjs && node tests/responsive.cjs && node tests/onboarding.cjs && node tests/layout-flow.cjs && node tests/visual-layout.cjs && node tests/support.cjs",
+    "test:ui": "node tests/smoke.cjs && node tests/verify-ui.cjs && node tests/responsive.cjs && node tests/onboarding.cjs && node tests/layout-flow.cjs && node tests/visual-layout.cjs && node tests/support.cjs && node tests/input-tiers.cjs",
     "check": "npm run build:check && npm test && npm run test:ui"
   },
   "devDependencies": { "playwright": "1.63.0" }

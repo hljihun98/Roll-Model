@@ -3,8 +3,8 @@
     <svg viewBox="0 0 20 20"><path d="M3 5h14M3 10h14M3 15h14"/></svg></button>
   <div class="brand"><b>롤모델</b><span>ROLLMODEL · 캐스터 접촉 · 발열 해석</span></div>
   <div class="modesw" role="group" aria-label="표시 모드">
-    <button id="mEasy" aria-pressed="true">간단</button>
-    <button id="mPro"  aria-pressed="false">상세</button>
+    <button id="mEasy" aria-pressed="true" title="필수 입력만으로 빠른 1차 검토">기본</button>
+    <button id="mPro"  aria-pressed="false" title="상세 조건 · 전문가 설정 · 분석 탭">상세</button>
   </div>
   <span class="sp"></span>
   <button class="tbtn" id="btnGuide" aria-haspopup="dialog">시작 가이드</button>
@@ -17,16 +17,17 @@
 </header>
 
 <section class="scenario-panel" id="scenarioPanel" aria-labelledby="scenarioTitle">
-  <div><label id="scenarioTitle" for="scen">① 사용 조건 선택</label><p class="hint">비슷한 시나리오를 불러온 뒤, 아래 입력을 실제 설계값으로 바꾸세요.</p></div>
+  <div><label id="scenarioTitle" for="scen">① 사용 조건 선택</label><p class="hint">비슷한 조건을 불러온 뒤 아래 <b>필수 입력</b>만 실제 값으로 바꿔도 1차 결과를 볼 수 있습니다.</p></div>
   <select id="scen" aria-label="시나리오"></select>
 </section>
 <div class="wrap">
-<aside class="rail" id="rail" aria-label="상세 입력"><div class="rail-in"><div class="rail-heading"><b>상세 입력</b><button class="tbtn" id="settingsDone">결과 보기</button></div><div id="railIn"></div></div></aside>
+<aside class="rail" id="rail" aria-label="상세 입력"><div class="rail-in"><div class="rail-heading"><b>상세 · 전문가 설정</b><button class="tbtn" id="settingsDone">결과 보기</button></div><div id="railIn"></div></div></aside>
 
 <main class="main">
   <div class="workspace-grid">
   <section class="strip" id="strip"></section>
   <section class="verdict" id="verdict" data-s="ok" tabindex="-1" aria-label="⑥ 판정 결과"></section>
+  <section class="quality" id="quality" aria-label="결과 신뢰도와 입력 품질" hidden></section>
   <div id="alerts" style="display:flex;flex-direction:column;gap:10px"></div>
   <aside class="visual-column" aria-label="접촉 시각화">
   <section class="card hero-fig" id="heroCard">

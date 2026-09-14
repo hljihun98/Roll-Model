@@ -1,6 +1,6 @@
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const root=path.resolve(__dirname,'..');
-const sourceNames=['20_state.js','30_engine.js','25_validation.js','31_compute.js','50_ui.js','60_guide.js'];
+const sourceNames=['20_state.js','30_engine.js','25_validation.js','31_compute.js','32_inputs.js','50_ui.js','60_guide.js'];
 const read=name=>fs.readFileSync(path.join(root,'src',name),'utf8').replace(/\r\n/g,'\n');
 function outputs(){
   const style=read('10_style.html'), body=read('40_body.html');

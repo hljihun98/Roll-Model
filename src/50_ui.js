@@ -49,148 +49,131 @@ function niceStep(range,target){const raw=range/target,m=Math.pow(10,Math.floor(
   return m*(n>=5?5:n>=2?2:n>=1?1:.5);}
 const SC=s=>({ok:'var(--ok)',warn:'var(--warn)',bad:'var(--bad)'}[s]);
 
-/* ════════════════════════════════════════════ 파라미터 레일 */
+/* ════════════════════════════════════════════ 입력 필드 생성 */
+/* 모든 입력은 INPUTS 메타데이터에서 만든다: 영향도 칩(누르면 도움말) · 값 출처 표시 · 비우면 기본값 */
+let VSRC = initialSources();          // 값 출처: user · default · manufacturer · measured · estimated
+const blankNotices = new Set();       // 비워서 기본값으로 대체한 상세 입력
+const impChip=k=>{const m=inputMeta(k),im=IMPACT[m.i];
+  return `<button type="button" class="imp" data-i="${m.i}" data-help="${k}" aria-expanded="false" aria-controls="help-${k}" aria-label="${esc(m.l)} 영향도 ${im.n} · 도움말">${im.n}</button>`;};
+const srcTag=k=>`<span class="srctag" data-srctag="${k}"></span>`;
+const helpBox=k=>`<div class="help" id="help-${k}" hidden></div>`;
+function fld(k,{id=k,cls='field',label}={}){
+  const m=inputMeta(k);
+  return `<div class="${cls}" data-k="${k}"><div class="fl"><label for="${id}">${esc(label||m.l)}</label>${impChip(k)}</div>
+    <div class="inp"><input type="number" id="${id}" step="${m.step??'any'}"${m.min!=null?` min="${m.min}"`:''}><span class="unit">${esc(m.u||'')}</span>${srcTag(k)}</div>${helpBox(k)}</div>`;
+}
+function checkFld(k,text){
+  const m=inputMeta(k);
+  return `<div class="field" data-k="${k}"><div class="fl"><span>${esc(m.l)}</span>${impChip(k)}</div>
+    <div class="inp"><label class="hint check"><input type="checkbox" id="${k}">${esc(text)}</label>${srcTag(k)}</div>${helpBox(k)}</div>`;
+}
+function segFld(k,buttons,extra=''){
+  const m=inputMeta(k);
+  return `<div class="field seg-field" data-k="${k}"${extra}><div class="fl"><span>${esc(m.l)}</span>${impChip(k)}${srcTag(k)}</div>
+    <div class="seg" data-set="${k}">${buttons.map(([v,t])=>`<button data-v="${v}">${esc(t)}</button>`).join('')}</div>${helpBox(k)}</div>`;
+}
+const fl=(...keys)=>keys.map(k=>fld(k)).join('');
+
+/* ════════════════════════════════════════════ 상세 · 전문가 레일 */
 const RAIL_HTML = `
-<details class="grp" id="settingsLoad" open><summary><i class="caret"></i>② 하중<span class="tag" id="tgLoad">—</span></summary><div class="grp-b">
-  <div class="seg" data-set="loadMode"><button data-v="build">중량에서 산출</button><button data-v="direct">직접 입력</button></div>
-  <div class="field" data-show="direct"><label>캐스터당 하중 F</label><div class="inp"><input type="number" id="Fdirect" step="10"><span class="unit">N</span></div></div>
-  <div data-show="build" style="display:flex;flex-direction:column;gap:7px">
-    <div class="field"><label>공차중량 (대차)</label><div class="inp"><input type="number" id="Wtare" step="10"><span class="unit">kg</span></div></div>
-    <div class="field"><label>적재하중 (차량)</label><div class="inp"><input type="number" id="Wload" step="10"><span class="unit">kg</span></div></div>
-    <div class="rule"></div>
-    <div class="field"><label>휠 열 수 (전후)</label><div class="inp"><input type="number" id="nRow" step="1" min="1"><span class="unit">열</span></div></div>
-    <div class="field"><label>휠 행 수 (좌우)</label><div class="inp"><input type="number" id="nCol" step="1" min="1"><span class="unit">행</span></div></div>
-    <label class="hint" for="supportMode">접지 조건</label>
-    <select id="supportMode"><option value="all">전체 바퀴 접지</option><option value="three">3점 접지 · 4바퀴 중 1개 비접지</option></select>
+<p class="rail-note">모르는 값은 <b>기본</b> 표시 그대로 두어도 계산됩니다. 칩은 결과 <b>영향도</b>이며 누르면 꼭 알아야 하는 값인지 설명합니다.</p>
+<details class="grp" id="settingsLoad" open><summary><i class="caret"></i>② 하중 상세<span class="tag" id="tgLoad">—</span></summary><div class="grp-b">
+  <p class="hint" data-show="direct">직접 입력 모드에서는 배치·편심·가감속 하중 이동을 계산하지 않습니다.</p>
+  <div data-show="build" class="stack">
+    <div class="field sel-field" data-k="supportMode"><div class="fl"><label for="supportMode">접지 조건</label>${impChip('supportMode')}</div><div class="inp">${srcTag('supportMode')}</div>${helpBox('supportMode')}</div>
+    <select id="supportMode"><option value="all">4점 접지 · 전체 바퀴 (기본)</option><option value="tri">3점 접지 · 구동부 2(전후) + 중앙 캐스터</option><option value="three">들림 검토 · 2×2 중 1개 비접지</option></select>
     <div id="threeSettings" hidden>
       <label class="hint" for="liftedWheel">바닥에 닿지 않는 바퀴</label>
       <select id="liftedWheel"><option value="0">1번 · x− / y−</option><option value="1">2번 · x− / y+</option><option value="2">3번 · x+ / y−</option><option value="3">4번 · x+ / y+</option></select>
       <p class="hint">2열 × 2행 전용. x는 전후, y는 좌우이며 원점은 배치 중심입니다. 3점에서는 평탄도 재분배 계수를 중복 적용하지 않습니다.</p>
     </div>
+    <p class="hint" id="triSettings" hidden>틸팅 구동부(바퀴 2개)는 접지점 1개로 봅니다. <b>축거</b> = 전후 구동부 간격, <b>윤거</b> = 구동부 축선에서 캐스터까지 좌우 거리. 원점은 세 접지점의 도심이며 e_y +는 캐스터 쪽입니다. 캐스터와 구동 바퀴는 같은 바퀴 제원으로 검토합니다.</p>
     <div id="supportReadout" class="support-readout" aria-live="polite"></div>
-    <div class="field"><label>축거 (전후 전장)</label><div class="inp"><input type="number" id="wb" step="50"><span class="unit">mm</span></div></div>
-    <div class="field"><label>윤거 (좌우 전폭)</label><div class="inp"><input type="number" id="tr" step="50"><span class="unit">mm</span></div></div>
-    <div class="field"><label>무게중심 편심 eₓ</label><div class="inp"><input type="number" id="ex" step="10"><span class="unit">mm</span></div></div>
-    <div class="field"><label>무게중심 편심 e_y</label><div class="inp"><input type="number" id="ey" step="10"><span class="unit">mm</span></div></div>
+    ${fl('ex','ey')}
     <p class="hint" id="hintFrac">—</p>
-    <div class="rule"></div>
-    <div class="field"><label>바닥 평탄도 재분배 계수<small>부정정 재분배. 편심은 위에서 이미 반영됨</small></label><div class="inp"><input type="number" id="k3" step="0.05"></div></div>
-    <div class="field"><label>가감속 aₓ</label><div class="inp"><input type="number" id="ax" step="0.1"><span class="unit">m/s²</span></div></div>
-    <div class="field"><label>횡가속 a_y</label><div class="inp"><input type="number" id="ay" step="0.1"><span class="unit">m/s²</span></div></div>
-    <div class="field"><label>무게중심 높이 h_cg</label><div class="inp"><input type="number" id="hcg" step="25"><span class="unit">mm</span></div></div>
-    <div class="rule"></div>
-    <div class="field"><label>단차 충격계수 자동</label><div class="inp"><label class="hint" style="display:flex;gap:5px;align-items:center;cursor:pointer"><input type="checkbox" id="kSauto" style="width:auto">자동</label></div></div>
-    <div class="field"><label>단차 높이 h_step</label><div class="inp"><input type="number" id="hstep" step="0.5"><span class="unit">mm</span></div></div>
-    <div class="field"><label>충격 감쇠 보정 η<small>운동량 상한 대비. 실측 DAF 범위에 맞춘 값</small></label><div class="inp"><input type="number" id="etaImp" step="0.05"></div></div>
-    <div class="field"><label>언스프렁 질량비<small>1 = 서스펜션 없음</small></label><div class="inp"><input type="number" id="mUns" step="0.05"></div></div>
-    <div class="field"><label>충격계수 kS (수동)</label><div class="inp"><input type="number" id="kS" step="0.05"></div></div>
+    ${fl('hcg','ax','ay')}
   </div>
-</div></details>
-
-<details class="grp" id="settingsWheel" open><summary><i class="caret"></i>③ 바퀴<span class="tag" id="tgWheel">—</span></summary><div class="grp-b">
-  <select id="wPre" aria-label="바퀴 재질"></select>
-  <div class="slid"><span class="hint" style="width:34px">D</span><input type="range" id="Dr" min="40" max="600" step="5"><span class="v" id="Dv"></span></div>
-  <div class="slid"><span class="hint" style="width:34px">L</span><input type="range" id="Lr" min="15" max="300" step="5"><span class="v" id="Lv"></span></div>
-  <div class="field"><label>트레드 두께<small>0 = 일체형 솔리드. 허브 구속 보정의 기준</small></label><div class="inp"><input type="number" id="wT" step="0.5"><span class="unit">mm</span></div></div>
-  <div class="field"><label>에지 라운드 R_e<small>단부 응력집중을 낮추는 유일한 기하 수단</small></label><div class="inp"><input type="number" id="edgeR" step="0.5"><span class="unit">mm</span></div></div>
-  <div class="field"><label>크라운 반경<small>0 = 평면 트레드. 값 입력 시 타원접촉으로 전환</small></label><div class="inp"><input type="number" id="crown" step="25"><span class="unit">mm</span></div></div>
   <div class="rule"></div>
-  <div class="field"><label>탄성계수 E₁</label><div class="inp"><input type="number" id="wE" step="1"><span class="unit">MPa</span></div></div>
-  <div class="field"><label>포아송비 ν₁</label><div class="inp"><input type="number" id="wNu" step="0.01"></div></div>
-  <div class="field"><label>허용 접촉면압</label><div class="inp"><input type="number" id="wPa" step="1"><span class="unit">MPa</span></div></div>
-  <div class="field"><label>인장강도</label><div class="inp"><input type="number" id="wTen" step="1"><span class="unit">MPa</span></div></div>
-  <div class="field"><label>히스테리시스 손실률 α</label><div class="inp"><input type="number" id="wAlpha" step="0.005"></div></div>
-  <div class="field"><label>허용 온도</label><div class="inp"><input type="number" id="wTmax" step="5"><span class="unit">°C</span></div></div>
-  <div class="field"><label>면압 온도저감 계수<small>/°C, 23°C 기준</small></label><div class="inp"><input type="number" id="wKt" step="0.001"></div></div>
-  <div class="field"><label>바닥 곡률 R₂<small>0 = 평면, 음수 = 오목(레일)</small></label><div class="inp"><input type="number" id="R2" step="50"><span class="unit">mm</span></div></div>
+  ${checkFld('kSauto','자동')}
+  ${fl('hstep','mUns','kS')}
 </div></details>
 
-<details class="grp" id="settingsFloor" open><summary><i class="caret"></i>④ 바닥<span class="tag" id="tgFloor">—</span></summary><div class="grp-b">
-  <select id="fPre" aria-label="바닥 마감"></select>
-  <div class="field"><label>도막 두께 t<small>0 = 무도장</small></label><div class="inp"><input type="number" id="fT" step="0.1"><span class="unit">mm</span></div></div>
-  <div class="field"><label>콘크리트 f_ck</label><div class="inp"><input type="number" id="fck" step="1"><span class="unit">MPa</span></div></div>
+<details class="grp" id="settingsWheel" open><summary><i class="caret"></i>③ 바퀴 상세<span class="tag" id="tgWheel">—</span></summary><div class="grp-b">
+  ${fl('wT','edgeR','crown')}
+  <p class="subhead">재질 물성 <span>재질 선택 시 통상값 · 제조사 값이 있으면 교체</span></p>
+  ${fl('wE','wNu','wPa','wTen','wTmax')}
+</div></details>
+
+<details class="grp" id="settingsFloor" open><summary><i class="caret"></i>④ 바닥 상세<span class="tag" id="tgFloor">—</span></summary><div class="grp-b">
+  ${fl('fT','fck')}
   <p class="hint" id="hintConc">—</p>
-  <div class="rule"></div>
-  <div class="field"><label>도막 탄성계수 E₂</label><div class="inp"><input type="number" id="fE" step="100"><span class="unit">MPa</span></div></div>
-  <div class="field"><label>도막 포아송비 ν₂</label><div class="inp"><input type="number" id="fNu" step="0.01"></div></div>
-  <div class="field"><label>도막 압축강도</label><div class="inp"><input type="number" id="fComp" step="5"><span class="unit">MPa</span></div></div>
-  <div class="field"><label>전동접촉 저감계수<small>압축강도 대비 허용 접촉압 비</small></label><div class="inp"><input type="number" id="fRed" step="0.05"></div></div>
-  <div class="field"><label>도막 인장강도</label><div class="inp"><input type="number" id="fTen" step="1"><span class="unit">MPa</span></div></div>
-  <div class="field"><label>부착강도</label><div class="inp"><input type="number" id="bond" step="0.1"><span class="unit">MPa</span></div></div>
-  <div class="field"><label>E_c 수동 지정<small>0 = ACI 식 자동</small></label><div class="inp"><input type="number" id="EcMan" step="1000"><span class="unit">MPa</span></div></div>
+  <p class="subhead">도막 물성 <span>도막이 있을 때만 사용</span></p>
+  ${fl('bond','fComp','fTen','fE')}
 </div></details>
 
-<details class="grp" id="settingsRun" open><summary><i class="caret"></i>⑤ 주행 · 기동<span class="tag" id="tgRun">—</span></summary><div class="grp-b">
-  <div class="field"><label>주행 속도 v</label><div class="inp"><input type="number" id="v" step="0.1"><span class="unit">m/s</span></div></div>
-  <div class="field"><label>듀티 사이클<small>0~1, 전체 시간 중 주행 비율</small></label><div class="inp"><input type="number" id="duty" step="0.05" min="0" max="1"></div></div>
-  <div class="field"><label>주위 온도</label><div class="inp"><input type="number" id="Tamb" step="1"><span class="unit">°C</span></div></div>
+<details class="grp" id="settingsRun" open><summary><i class="caret"></i>⑤ 주행 상세<span class="tag" id="tgRun">—</span></summary><div class="grp-b">
+  ${fl('duty','Tamb')}
   <div class="rule"></div>
   <p class="hint">접선력 조건 — 계면 전단과 표면 인장은 이 선택으로 완전히 달라집니다.</p>
   <div class="seg" data-set="maneuver"><button data-v="drive">직진 가감속</button><button data-v="spin">제자리 선회</button><button data-v="manual">직접</button></div>
-  <div class="field"><label>마찰계수 μ (가용)</label><div class="inp"><input type="number" id="mu" step="0.05"></div></div>
-  <div class="field"><label>접선력비 (직접 지정)</label><div class="inp"><input type="number" id="muMan" step="0.01"></div></div>
-  <div class="field"><label>램프 경사</label><div class="inp"><input type="number" id="grade" step="0.01"></div></div>
-  <div class="rule"></div>
-  <div class="field"><label>대류계수 (정지)</label><div class="inp"><input type="number" id="hNat" step="1"><span class="unit">W/m²K</span></div></div>
-  <div class="field"><label>속도 대류 기울기</label><div class="inp"><input type="number" id="hVel" step="1"></div></div>
-  <div class="field"><label>허브 전도 UA</label><div class="inp"><input type="number" id="UAhub" step="0.05"><span class="unit">W/K</span></div></div>
+  ${fl('mu','muMan','grade')}
 </div></details>
 
-<details class="grp"><summary><i class="caret"></i>해석 옵션<span class="tag" id="tgOpt">—</span></summary><div class="grp-b">
-  <p class="hint">트레드 허브 구속 보정 — 얇은 트레드의 겉보기 강성 상승을 반영합니다. 끄면 원본 계산기와 동일한 반무한체 가정이 됩니다.</p>
-  <div class="seg" data-set="confine"><button data-v="1">적용</button><button data-v="0">미적용</button></div>
-  <p class="hint">도막·기재 비교 — 각 재료의 균질 반무한체 중 높은 면압을 사용합니다. 실제 층상체의 상한 보장은 없으며 별도 검증이 필요합니다.</p>
-  <div class="seg" data-set="layer"><button data-v="1">적용</button><button data-v="0">미적용</button></div>
-  <div class="field"><label>Gent 계수 k<small>재료 경도에 따라 0.5~1.0</small></label><div class="inp"><input type="number" id="kGent" step="0.05"></div></div>
-  <div class="field"><label>포아송비 일괄 지정<small>0 = 재질 기본값</small></label><div class="inp"><input type="number" id="nuOv" step="0.01"></div></div>
-  <div class="field"><label>바닥에도 적용</label><div class="inp"><label class="hint" style="display:flex;gap:5px;align-items:center;cursor:pointer"><input type="checkbox" id="nuOvAll" style="width:auto">ν₂ 포함</label></div></div>
+<details class="grp" id="settingsCriteria" open><summary><i class="caret"></i>판정 기준<span class="tag" id="tgCrit">—</span></summary><div class="grp-b">
+  ${fl('SF')}
 </div></details>
 
-<details class="grp"><summary><i class="caret"></i>판정 기준<span class="tag">임계값</span></summary><div class="grp-b">
-  <div class="field"><label>안전율 SF</label><div class="inp"><input type="number" id="SF" step="0.1" min="1"></div></div>
-  <div class="field"><label>단부 예리단부 K₀<small>실측·FEM 범위 2~3</small></label><div class="inp"><input type="number" id="K0" step="0.1" min="1"></div></div>
-  <div class="field"><label>단부 국부항복 허용배수</label><div class="inp"><input type="number" id="edgeAllow" step="0.05"></div></div>
-  <div class="rule"></div>
-  <div class="field"><label>b/R 주의 / 불가</label><div class="inp"><input type="number" id="brW" step="0.01" style="width:40px"><input type="number" id="brF" step="0.01" style="width:40px"></div></div>
-  <div class="field"><label>t_tread/b 주의 / 불가</label><div class="inp"><input type="number" id="ttW" step="0.05" style="width:40px"><input type="number" id="ttF" step="0.05" style="width:40px"></div></div>
-  <div class="field"><label>t_coat/b 주의 / 불가</label><div class="inp"><input type="number" id="tbW" step="0.1" style="width:40px"><input type="number" id="tbF" step="0.1" style="width:40px"></div></div>
-  <div class="field"><label>L/2b 주의 / 불가</label><div class="inp"><input type="number" id="arW" step="0.5" style="width:40px"><input type="number" id="arF" step="0.5" style="width:40px"></div></div>
-  <p class="hint">아래 경고 구간과 경험계수는 스크리닝 정책값입니다. 경고 상태도 허용치 이내의 통과를 뜻하지 않습니다.</p>
-  <div class="field"><label>면압 불가 비율</label><div class="inp"><input type="number" id="surfOver" min="1" step="0.05"></div></div>
-  <div class="field"><label>단부압 불가 비율</label><div class="inp"><input type="number" id="edgeOver" min="1" step="0.05"></div></div>
-  <div class="field"><label>인장·전단 불가 비율</label><div class="inp"><input type="number" id="stressOver" min="1" step="0.05"></div></div>
-  <div class="field"><label>단부 완화 계수</label><div class="inp"><input type="number" id="edgeDecay" step="0.1"></div></div>
-  <div class="field"><label>충격계수 계산 상한</label><div class="inp"><input type="number" id="impactMax" min="1" step="0.5"></div></div>
-  <div class="field"><label>구속 OFF t/b 주의</label><div class="inp"><input type="number" id="unconfWarn" step="0.1"></div></div>
-  <div class="field"><label>구속 OFF t/b 불가</label><div class="inp"><input type="number" id="unconfBad" step="0.1"></div></div>
-  <div class="field"><label>지압 면적비 A₂/A₁<small>검증된 지지 면적비, 기본 1</small></label><div class="inp"><input type="number" id="bearingAreaRatio" min="1" max="4" step="0.1"></div></div>
-  <div class="field"><label>무도장 표면 부착 비<small>콘크리트 인장강도 대비 경험값</small></label><div class="inp"><input type="number" id="bareBondFactor" step="0.05"></div></div>
+<div class="rail-divider"><b>전문가 설정</b><span>경험계수 · 보정값 · 판정 경계. 일반 사용자는 변경하지 않아도 됩니다.</span></div>
+<details class="grp expert" id="expertCoef"><summary><i class="caret"></i>경험 · 보정 계수<span class="tag">경험값</span></summary><div class="grp-b">
+  ${fl('k3','etaImp','K0','edgeDecay','edgeAllow','kGent')}
+</div></details>
+<details class="grp expert" id="expertMaterial"><summary><i class="caret"></i>보조 물성 · 바닥 형상<span class="tag">참고값</span></summary><div class="grp-b">
+  ${fl('wAlpha','wKt','fNu','fRed','R2','EcMan','bearingAreaRatio','bareBondFactor')}
+</div></details>
+<details class="grp expert" id="expertThermal"><summary><i class="caret"></i>열 모델 계수<span class="tag">보정값</span></summary><div class="grp-b">
+  <p class="hint">정격점 캘리브레이션은 상세 모드의 <b>열 · 듀티</b> 탭에서 합니다.</p>
+  ${fl('hNat','hVel','UAhub')}
+</div></details>
+<details class="grp expert" id="expertOptions"><summary><i class="caret"></i>해석 옵션<span class="tag" id="tgOpt">—</span></summary><div class="grp-b">
+  ${segFld('confine',[['1','적용'],['0','미적용']])}
+  ${segFld('layer',[['1','적용'],['0','미적용']])}
+  ${fl('nuOv')}
+  ${checkFld('nuOvAll','ν₂ 포함')}
+</div></details>
+<details class="grp expert" id="expertCriteria"><summary><i class="caret"></i>판정 경계값<span class="tag">임계값</span></summary><div class="grp-b">
+  <p class="hint">경고 구간과 경험계수는 스크리닝 정책값입니다. 경고 상태도 허용치 이내의 통과를 뜻하지 않습니다.</p>
+  ${fl('brW','brF','ttW','ttF','tbW','tbF','arW','arF','surfOver','edgeOver','stressOver','impactMax','unconfWarn','unconfBad')}
 </div></details>`;
 
-const NUMS=['Fdirect','Wtare','Wload','nRow','nCol','wb','tr','ex','ey','k3','ax','ay','hcg','hstep',
- 'etaImp','mUns','kS','wT','edgeR','crown','wE','wNu','wPa','wTen','wAlpha','wTmax','wKt','R2',
- 'fT','fck','fE','fNu','fComp','fRed','fTen','bond','EcMan','v','duty','Tamb','mu','muMan','grade',
- 'hNat','hVel','UAhub','kGent','nuOv','SF','K0','edgeAllow','brW','brF','ttW','ttF','tbW','tbF','arW','arF',
- 'surfOver','edgeOver','stressOver','edgeDecay','impactMax','unconfWarn','unconfBad','bearingAreaRatio','bareBondFactor'];
+/* 숫자 입력 전체. 열 보정 입력(calF 등)은 열 패널에서 따로 만든다. */
+const NUMS=Object.keys(INPUTS).filter(k=>typeof DEFAULTS[k]==='number'&&k!=='liftedWheel');
 const CHECKS=['kSauto','nuOvAll'];
 
-/* ══════════════════════════════════════════ 입력 스트립 */
+/* ══════════════════════════════════════════ 기본 입력 스트립 */
+const qf=k=>fld(k,{cls:'qf'});
+const slideFld=(k,range)=>{const m=inputMeta(k);
+  return `<div class="qf" data-k="${k}"><div class="fl"><label for="${k}">${esc(m.l)}</label>${impChip(k)}</div>
+    <div class="inp slid"><input type="range" id="${range}" min="${m.min}" max="${m.max}" step="${m.step}" aria-label="${esc(m.l)} 슬라이더"><input type="number" id="${k}" step="${m.step}"><span class="unit">${esc(m.u)}</span>${srcTag(k)}</div>${helpBox(k)}</div>`;};
+const selFld=(k,id)=>{const m=inputMeta(k);
+  return `<div class="qf" data-k="${k}"><div class="fl"><label for="${id}">${esc(m.l)}</label>${impChip(k)}</div>
+    <div class="inp"><select id="${id}"></select>${srcTag(k)}</div>${helpBox(k)}</div>`;};
 const STRIP_HTML = `
-<section class="cellin" id="inputLoad" aria-labelledby="inputLoadTitle"><h2 class="input-title" id="inputLoadTitle">② 하중</h2><span class="eyebrow">캐스터당 하중</span>
-  <div class="big"><span class="n" id="sF" style="font-size:19px;font-weight:500;letter-spacing:-.02em">—</span><u>N</u></div>
-  <span class="hint" id="sFsub">—</span><button class="tbtn settings-link" data-settings="Load">하중 설정</button><span class="hint">중량에서 산출 또는 N 직접 입력</span></section>
+<section class="cellin" id="inputLoad" aria-labelledby="inputLoadTitle">
+  <div class="cell-head"><h2 class="input-title" id="inputLoadTitle">② 하중</h2>
+    <span class="cell-result"><span class="eyebrow">캐스터당</span> <b class="n" id="sF">—</b> N <span class="hint" id="sFsub">—</span></span></div>
+  <div class="seg" data-set="loadMode" data-k="loadMode"><button data-v="build">로봇 중량 + 적재로 산출</button><button data-v="direct">캐스터당 하중 직접 입력</button></div>
+  <div class="qgrid" data-show="build">${['Wtare','Wload','nRow','nCol','wb','tr'].map(qf).join('')}</div>
+  <div class="qgrid" data-show="direct">${qf('Fdirect')}</div>
+  <button class="tbtn settings-link" data-settings="Load">상세 조건 · 편심·가감속·충격<span class="defcount" data-defcount="Load"></span></button></section>
 <section class="cellin" id="inputWheel" aria-labelledby="inputWheelTitle"><h2 class="input-title" id="inputWheelTitle">③ 바퀴</h2>
-  <label class="eyebrow" for="sWPre">바퀴 재질</label><select id="sWPre"></select>
-  <div class="slid"><label for="sD">직경 D</label><input type="range" id="sD" min="40" max="600" step="5"><span class="v" id="sDv"></span><span class="unit">mm</span></div>
-  <div class="slid"><label for="sL">폭 L</label><input type="range" id="sL" min="15" max="300" step="5"><span class="v" id="sLv"></span><span class="unit">mm</span></div>
-  <span class="hint" id="sWsub">—</span><button class="tbtn settings-link" data-settings="Wheel">바퀴 상세 설정</button></section>
-<section class="cellin" id="inputFloor" aria-labelledby="inputFloorTitle"><h2 class="input-title" id="inputFloorTitle">④ 바닥</h2><label class="eyebrow" for="sFPre">바닥 마감</label>
-  <select id="sFPre"></select><span class="hint" id="sFfsub">—</span><button class="tbtn settings-link" data-settings="Floor">도막·기재 설정</button></section>
-<section class="cellin" id="inputRun" aria-labelledby="inputRunTitle"><h2 class="input-title" id="inputRunTitle">⑤ 주행 · 기동</h2><label class="eyebrow" for="sV">주행 속도</label>
-  <div class="slid"><input type="range" id="sV" min="0" max="3" step="0.05"><span class="v" id="sVv"></span><span class="unit">m/s</span></div>
-  <span class="hint" id="sVsub">발열 판정을 지배</span><span class="eyebrow">기동 조건</span>
-  <div class="seg" data-set="maneuver" style="margin-top:2px"><button data-v="drive">직진</button><button data-v="spin">선회</button></div>
-  <span class="hint" id="sMsub">—</span><button class="tbtn settings-link" data-settings="Run">듀티·주행 상세 설정</button></section>`;
+  ${selFld('wPre','sWPre')}${slideFld('D','sD')}${slideFld('L','sL')}
+  <span class="hint" id="sWsub">—</span><button class="tbtn settings-link" data-settings="Wheel">바퀴 상세 · 트레드·물성<span class="defcount" data-defcount="Wheel"></span></button></section>
+<section class="cellin" id="inputFloor" aria-labelledby="inputFloorTitle"><h2 class="input-title" id="inputFloorTitle">④ 바닥</h2>
+  ${selFld('fPre','sFPre')}<span class="hint" id="sFfsub">—</span><button class="tbtn settings-link" data-settings="Floor">도막·기재 상세<span class="defcount" data-defcount="Floor"></span></button></section>
+<section class="cellin" id="inputRun" aria-labelledby="inputRunTitle"><h2 class="input-title" id="inputRunTitle">⑤ 주행 · 기동</h2>
+  ${slideFld('v','sV')}<span class="hint" id="sVsub">발열 판정을 지배</span>
+  ${segFld('maneuver',[['drive','직진'],['spin','선회']])}
+  <span class="hint" id="sMsub">—</span><button class="tbtn settings-link" data-settings="Run">듀티·온도·마찰 상세<span class="defcount" data-defcount="Run"></span></button></section>`;
 
 /* ══════════════════════════════════════════════ 렌더 */
 function renderVerdict(c){
@@ -300,25 +283,96 @@ function renderFixes(c){
     fixesCache.set(key,sg); showFixes(c,sg);
   },150);
 }
+/* 개선안은 기계 설계에서 바꾸기 쉽고 영향이 큰 값(폭·직경·하중·치수 확대)을 먼저 보이고,
+   같은 묶음 안에서는 필요한 변화율이 작은 경로를 앞에 둔다. 속도·듀티·도막·라운드는 뒤로 보낸다. */
+const FIX_PRIMARY=['L','D','Wload','Fdirect'];
+function orderFixes(sg){
+  const rel=x=>x.from>0?Math.abs(x.to/x.from-1):Infinity;
+  const primary=sg.items.filter(x=>FIX_PRIMARY.includes(x.key)).sort((a,b)=>rel(a)-rel(b));
+  const rest=sg.items.filter(x=>!FIX_PRIMARY.includes(x.key)).sort((a,b)=>rel(a)-rel(b));
+  return [...primary, ...(sg.scale?[{scale:sg.scale}]:[]), ...rest];
+}
 function showFixes(c,sg){
   const card=$('#fixCard');
   if(c.worst!=='bad'){ card.hidden=true; return; }
-  const parts=sg.items.map(x=>
-    `<button class="fix" data-k="${x.key}" data-v="${x.to}"><span>${esc(x.label)}</span>
+  const paths=orderFixes(sg);
+  const parts=paths.map(x=>x.scale
+    ? `<button class="fix" data-scale="${x.scale.k}">
+    <span>휠 치수 동시 확대</span><b>×1.00</b><span class="arrow">→</span>
+    <span class="to">×${fmt(x.scale.k,2)}</span>
+    <span class="hint">D${fmt(x.scale.D,0)} × L${fmt(x.scale.L,0)}${x.scale.wT>0?` · 트레드 ${fmt(x.scale.wT,1)}`:''}</span></button>`
+    : `<button class="fix" data-k="${x.key}" data-v="${x.to}"><span>${esc(x.label)}</span>
       <b>${fmt(x.from,x.dec)}</b><span class="arrow">→</span><span class="to">${fmt(x.to,x.dec)}</span>
       <span class="hint">${esc(x.unit)}</span></button>`);
-  if(sg.scale) parts.push(`<button class="fix" data-scale="${sg.scale.k}">
-    <span>휠 치수 동시 확대</span><b>×1.00</b><span class="arrow">→</span>
-    <span class="to">×${fmt(sg.scale.k,2)}</span>
-    <span class="hint">D${fmt(sg.scale.D,0)} × L${fmt(sg.scale.L,0)}${sg.scale.wT>0?` · 트레드 ${fmt(sg.scale.wT,1)}`:''}</span></button>`);
   card.hidden=false;
-  $('#fixTag').textContent = parts.length? `${parts.length}개 경로` : '단일 변수로는 해결 불가';
-  $('#fixes').innerHTML = parts.join('') ||
-    `<p class="hint">스캔 범위 안에서는 변수 하나만 바꿔 불가 판정을 해소할 수 없습니다. 재질 변경, 휠 수 증가, 바닥 사양 변경을 함께 검토하십시오.</p>`;
+  $('#fixTag').textContent = parts.length? `${parts.length}개 경로 · 영향 큰 설계 변경부터` : '단일 변수로는 해결 불가';
+  const moreOpen=$('#fixes .fix-more')?.open;
+  $('#fixes').innerHTML = parts.length
+    ? `<div class="fix-main">${parts.slice(0,3).join('')}</div>`+(parts.length>3
+      ? `<details class="fix-more"${moreOpen?' open':''}><summary>다른 경로 ${parts.length-3}개 보기</summary><div class="fix-main">${parts.slice(3).join('')}</div></details>`:'')
+    : `<p class="hint">스캔 범위 안에서는 변수 하나만 바꿔 불가 판정을 해소할 수 없습니다. 재질 변경, 휠 수 증가, 바닥 사양 변경을 함께 검토하십시오.</p>`;
   $$('#fixes .fix').forEach(b=>b.onclick=()=>{
     if(b.dataset.scale){ set(scaledGeom(S, +b.dataset.scale)); }
     else set({[b.dataset.k]: +b.dataset.v});
   });
+}
+
+/* ═════════════════════════════ 결과 신뢰도 · 기본값 사용 · 민감도 */
+let SENS=null, sensTimer=null;
+const sensCache=new Map();
+const designKey=()=>JSON.stringify({...S,mode:null,tab:null});
+const pct=v=>`${v>0?'+':v<0?'−':'±'}${fmt(Math.abs(v)*100,1)}%`;
+const srcPill=k=>{const s=VSRC[k]||'default';return `<span class="srctag" data-s="${s}">${SOURCE_TAG[s]}</span>`;};
+const inputChip=k=>`<button type="button" class="qchip" data-goto="${k}">${esc(inputMeta(k).l)}${srcPill(k)}</button>`;
+const chipList=(keys,n=6)=>keys.slice(0,n).map(inputChip).join('')+(keys.length>n?`<span class="hint">외 ${keys.length-n}개 · 아래 근거에서 확인</span>`:'');
+function valueText(k,v){ const m=inputMeta(k); return `${fmt(v,Math.abs(v)>=100||Number.isInteger(v)?0:(Math.abs(v)>=1?2:3))}${m.u?` ${m.u}`:''}`; }
+
+function renderQuality(c){
+  const box=$('#quality');
+  if(!c||!c.ok){ box.hidden=true; clearTimeout(sensTimer); return; }
+  box.hidden=false;
+  const key=designKey(), sens=SENS&&SENS.key===key?SENS.data:null;
+  if(!sens){
+    clearTimeout(sensTimer);
+    if(sensCache.has(key)){ SENS={key,data:sensCache.get(key)}; return renderQuality(c); }
+    const snapshot={...S};
+    sensTimer=setTimeout(()=>{ if(C!==c) return;
+      const data=sensitivity(snapshot,c);
+      if(sensCache.size>=24) sensCache.delete(sensCache.keys().next().value);
+      sensCache.set(key,data); SENS={key,data}; renderQuality(c); },220);
+  }
+  const q=inputQuality(S,VSRC,c);
+  const open=box.querySelector('.quality-details')?.open ?? false;
+  const warns=defaultWarnings(S,VSRC,sens);
+  const notices=[...blankNotices].filter(k=>inputRelevant(k,S)&&VSRC[k]==='default')
+    .map(k=>`${inputMeta(k).l} 값이 입력되지 않아 기본값(${valueText(k,S[k])})을 사용했습니다.`);
+  let cta='';
+  if(q.reqDefault.length) cta=`<p class="q-cta"><b>필수 입력 ${q.reqDefault.length}개가 아직 예시값입니다.</b> 실제 설계값을 입력하거나 값 출처를 확인하세요.</p><div class="qchips">${chipList(q.reqDefault)}</div>`;
+  else if(q.important.length) cta=`<p class="q-cta">계산 신뢰도를 높이려면 <b>${q.important.length}개</b> 추가 입력을 확인하세요.</p><div class="qchips">${chipList(q.important)}</div>`;
+  else cta=`<p class="q-cta">영향이 큰 입력은 모두 확인했습니다.</p>`;
+  const relevant=Object.keys(INPUTS).filter(k=>INPUTS[k].t!=='exp'&&INPUTS[k].i!=='j'&&inputRelevant(k,S))
+    .sort((a,b)=>(IMPACT[INPUTS[b].i].w-IMPACT[INPUTS[a].i].w)||(INPUTS[a].t==='req'?-1:1));
+  const reasonRows=relevant.map(k=>`<li><span>${esc(inputMeta(k).l)}</span><i class="imp" data-i="${INPUTS[k].i}">${IMPACT[INPUTS[k].i].n}</i>${srcPill(k)}</li>`).join('');
+  const sensRows=!sens?'<p class="hint">영향 계산 중…</p>'
+    : sens.items.length?`<ol class="sens">${sens.items.slice(0,5).map(r=>{
+      const up=r.d[1]??r.d[-1], dir=r.d[1]!=null?'+':'−', p=r.p[1]??r.p[-1];
+      return `<li><button type="button" class="qchip" data-goto="${r.k==='W'?'Wload':r.k}">${esc(r.label)}${r.k==='W'?srcPill('Wload'):srcPill(r.k)}</button>
+        <span>${r.step==='±0.01'?`${dir}0.01`:`${dir}10%`} → ${esc(sens.focusName)} ${up!=null?pct(up):'—'} · p_max ${p!=null?pct(p):'—'}${r.flip?` · <b data-s="${r.flip.to}">${r.flip.dir>0?'+':'−'}${r.step==='±0.01'?'0.01':'10%'} 시 판정 ${STATUS[r.flip.to]}</b>`:''}</span></li>`;}).join('')}</ol>`
+      : '<p class="hint">±10% 변경으로 결과가 바뀌는 입력이 없습니다.</p>';
+  box.dataset.g=q.grade;
+  box.innerHTML=`<div class="q-head"><span class="grade" data-g="${q.grade}" aria-hidden="true">${q.grade}</span>
+    <div class="q-main"><b>결과 신뢰도 ${q.grade}</b><span class="hint"> · ${esc(q.text)}</span>
+      <p class="hint">관련 입력 ${q.total}개 중 <b>${q.defaults.length}</b>개 기본값 사용 · 필수 ${q.reqTotal-q.reqDefault.length}/${q.reqTotal} 확인 · 판정(가능/불가)과 별개</p></div></div>
+    ${cta}
+    ${notices.length||warns.length?`<ul class="q-warn">${notices.map(t=>`<li data-s="info">${esc(t)}</li>`).join('')}${warns.map(w=>`<li data-s="warn">${esc(w.msg)} <button type="button" class="linkbtn" data-goto="${w.k}">입력하기</button></li>`).join('')}</ul>`:''}
+    <details class="quality-details"${open?' open':''}><summary>신뢰도 근거 · 결과에 영향이 큰 조건</summary>
+      <div class="q-body">
+        <section><h3>현재 결과에 영향이 큰 조건 <span>입력 하나만 바꾼 재계산</span></h3>${sensRows}</section>
+        <section><h3>입력 품질 ${q.inputGrade}</h3><ul class="q-reasons">${reasonRows}</ul>
+          ${q.expertDefaults.length?`<p class="hint">전문가 경험값 ${q.expertDefaults.length}개 기본값 사용: ${q.expertDefaults.map(k=>esc(inputMeta(k).l)).join(', ')}</p>`:''}</section>
+        <section><h3>모델 적용성 ${q.modelGrade}</h3>${q.modelNotes.length?`<ul class="q-reasons">${q.modelNotes.map(n=>`<li><span>${esc(n.title)}</span><span class="pill" data-s="${n.s}">${STATUS[n.s]}</span></li>`).join('')}</ul>`:'<p class="hint">접촉·층상·미소변형 가정이 적용 범위 안에 있습니다.</p>'}</section>
+      </div></details>`;
+  box.querySelectorAll('[data-goto]').forEach(b=>b.onclick=()=>gotoInput(b.dataset.goto));
 }
 
 function renderLoad(c){
@@ -851,7 +905,7 @@ function renderMatrix(){
   $('#mxTag').textContent=`p_max MPa · D${S.D}×L${S.L} · F_op ${fmt(C.Fop,0)} N · v ${S.v} m/s · ${S.maneuver==='spin'?'제자리 선회':'직진'}`;
   $$('#mx td[data-w]').forEach(td=>td.onclick=()=>{
     const T={...S}; applyWheel(T,td.dataset.w); applyFloor(T,td.dataset.f);
-    S=T; setTab('chain'); syncInputs(); render(); });
+    S=T; markPresets('wheel'); markPresets('floor'); VSRC.wPre=VSRC.fPre='user'; setTab('chain'); syncInputs(); render(); });
 }
 
 /* ══════════════════════════════════════════════ 근거 대장 */
@@ -906,10 +960,10 @@ function renderThermal(c){
     <button class="tbtn" id="btnCal" style="margin-top:10px;width:100%"></button>
     <p class="hint" id="calFeedback" style="margin-top:8px"></p>`;
   ['calF','calV','calD','calL','rthScale'].forEach(id=>{const e=$('#'+id); if(!e)return;
-    if(document.activeElement!==e)e.value=S[id]; e.oninput=()=>{S[id]=e.valueAsNumber; render();};});
+    if(document.activeElement!==e)e.value=S[id]; e.oninput=()=>id==='rthScale'?numberInput(id,e):(S[id]=e.valueAsNumber, render());});
   const bc=$('#btnCal'); bc.disabled=!cal;
   bc.textContent=cal?`정격점에 맞추기 — ×${fmt(cal.scale,3)} 적용`:'정격·온도·손실률을 확인하십시오';
-  bc.onclick=cal?()=>set({rthScale:cal.scale}):null;
+  bc.onclick=cal?()=>set({rthScale:cal.scale},'manufacturer'):null;
   $('#calFeedback').textContent=cal?`보정 전 온도 상승 ${fmt(cal.dT0,1)} K · 허용까지 ${fmt(S.wTmax-S.Tamb,1)} K`:'';
 }
 
@@ -932,48 +986,93 @@ function startRoll(c){
 }
 
 /* ══════════════════════════════════════════════ 배선 */
-function set(patch){ Object.assign(S,patch); syncInputs(); render(); }
+function set(patch,source='user'){ Object.assign(S,patch); for(const k of Object.keys(patch)){ if(k in VSRC) VSRC[k]=source; blankNotices.delete(k); } syncInputs(); render(); }
+
+/* 재질·바닥 프리셋이 채운 물성은 기본값(통상값)으로 표시한다 */
+function markPresets(kind){ (kind==='wheel'?WHEEL_KEYS:FLOOR_KEYS).forEach(k=>{VSRC[k]='default';blankNotices.delete(k);}); }
+
+/* 숫자 입력: 필수·설계 기준은 비우면 계산을 멈추고, 나머지는 기본값으로 대체한다.
+   기본값을 고치면 사용자 입력이 되며, 제조사·실측·추정으로 지정한 출처는 유지한다. */
+function numberInput(k,e){
+  const m=inputMeta(k);
+  if(e.value.trim()===''&&((m.t!=='req'&&m.blank!=='error')||!inputRelevant(k,S))){
+    S[k]=defaultValueFor(S,k); VSRC[k]='default'; if(m.t==='imp') blankNotices.add(k);
+  }else{ S[k]=e.valueAsNumber; if(VSRC[k]==='default') VSRC[k]='user'; blankNotices.delete(k); }
+  /* 무도장이면 바닥 물성이 f_ck 에서 파생되므로 표시값도 함께 갱신한다 */
+  if((k==='fck'||k==='EcMan') && !(S.fT>0)){ S.fE=Math.round(concreteE(S)); S.fNu=.20; }
+  syncInputs(); render();
+}
+
+/* 도움말: 꼭 알아야 하는 값인지 · 영향도 · 값 출처 선택 · 기본값 복귀 */
+function toggleHelp(k){
+  const box=$('#help-'+k); if(!box) return;
+  const show=box.hidden;
+  $$('.help:not([hidden])').forEach(h=>{ if(h!==box){ h.hidden=true; $$(`[aria-controls="${h.id}"]`).forEach(b=>b.setAttribute('aria-expanded','false')); }});
+  box.hidden=!show; $$(`[aria-controls="help-${k}"]`).forEach(b=>b.setAttribute('aria-expanded',String(show)));
+  if(show) fillHelp(k);
+}
+function fillHelp(k){
+  const box=$('#help-'+k); if(!box||box.hidden) return;
+  const m=inputMeta(k), num=typeof DEFAULTS[k]==='number', def=num?defaultValueFor(S,k):null;
+  const row=SENS&&SENS.key===designKey()?SENS.data.items.find(r=>r.k===k||(r.k==='W'&&(k==='Wtare'||k==='Wload'))):null;
+  const up=row&&(row.d[1]??row.d[-1]);
+  box.innerHTML=`<p>${esc(m.h||'')}</p>
+    <p class="hint">영향도 <b>${IMPACT[m.i].n}</b> — ${esc(IMPACT[m.i].d)} · ${TIERS[m.t]} 입력${row&&up!=null?` · 현재 조건에서 ${row.step} 변경 시 ${esc(SENS.data.focusName)} 약 ${fmt(Math.abs(up)*100,1)}% 변화`:''}</p>
+    <div class="help-row"><label>값 출처 <select data-srcsel="${k}">${Object.entries(VALUE_SOURCES).map(([v,t])=>`<option value="${v}"${VSRC[k]===v?' selected':''}>${t}</option>`).join('')}</select></label>
+    ${num&&Number.isFinite(def)?`<button type="button" class="tbtn" data-reset="${k}">기본값 ${esc(valueText(k,def))}로 되돌리기</button>`:''}</div>`;
+  box.querySelector('[data-srcsel]').onchange=ev=>{ VSRC[k]=ev.target.value; syncInputs(); render(); };
+  const rb=box.querySelector('[data-reset]');
+  if(rb) rb.onclick=()=>{ S[k]=defaultValueFor(S,k); VSRC[k]='default'; blankNotices.delete(k);
+    if((k==='fck'||k==='EcMan')&&!(S.fT>0)) S.fE=Math.round(concreteE(S));
+    syncInputs(); render(); fillHelp(k); };
+}
+
+/* 신뢰도 카드에서 해당 입력으로 이동한다. 상세·전문가 입력이면 해당 그룹을 연다. */
+function gotoInput(k){
+  const wrap=$(`#strip [data-k="${k}"]`)||$(`#rail [data-k="${k}"]`);
+  if(!wrap) return;
+  const mobile=matchMedia('(max-width:960px)').matches, det=wrap.closest('details.grp');
+  if(det){ if(S.mode!=='pro') setMode('pro'); setRailVisible(true);
+    if(mobile) $$('#rail .grp').forEach(d=>d.open=false);
+    det.open=true; }
+  else if(mobile) setRailVisible(false);
+  const focus=wrap.querySelector('input:not([type=range]),select,.seg button');
+  if(focus&&!focus.id) focus.id='focus-'+k;
+  jumpTo(`${det?'#rail':'#strip'} [data-k="${k}"]`, focus?'#'+focus.id:null);
+}
 
 function buildUI(){
   $('#railIn').innerHTML=RAIL_HTML;
   $('#strip').innerHTML=STRIP_HTML;
   const wopt=Object.entries(WHEELS).map(([k,v])=>`<option value="${k}">${esc(v.n)}</option>`).join('');
   const fopt=Object.entries(FLOORS).map(([k,v])=>`<option value="${k}">${esc(v.n)}</option>`).join('');
-  $('#wPre').innerHTML=wopt; $('#sWPre').innerHTML=wopt;
-  $('#fPre').innerHTML=fopt; $('#sFPre').innerHTML=fopt;
+  $('#sWPre').innerHTML=wopt; $('#sFPre').innerHTML=fopt;
   $('#scen').innerHTML=`<option value="">시나리오 불러오기…</option>`+
     Object.entries(SCENARIOS).map(([k,v])=>`<option value="${k}">${esc(v.n)} — ${esc(v.d)}</option>`).join('');
   $('#tabs').innerHTML=[['chain','계산 체인'],['thermal','열 · 듀티'],['matrix','조합 매트릭스'],
     ['reverse','치수 역산'],['sources','근거 대장']].map(([k,l])=>
     `<button role="tab" data-tab="${k}" aria-selected="${k==='chain'}">${l}</button>`).join('');
 
-  NUMS.forEach(id=>{const e=$('#'+id); if(!e)return;
-    e.addEventListener('input',()=>{
-      S[id]=e.valueAsNumber;
-      /* 무도장이면 바닥 물성이 f_ck 에서 파생되므로 표시값도 함께 갱신한다 */
-      if((id==='fck'||id==='EcMan') && !(S.fT>0)){ S.fE=Math.round(concreteE(S)); S.fNu=.20; syncInputs(); }
-      render();});});
+  NUMS.forEach(id=>{const e=$('#'+id); if(!e)return; e.addEventListener('input',()=>numberInput(id,e));});
   CHECKS.forEach(id=>{const e=$('#'+id); if(!e)return;
-    e.addEventListener('change',()=>{S[id]=e.checked; render();});});
+    e.addEventListener('change',()=>{S[id]=e.checked; VSRC[id]='user'; syncInputs(); render();});});
+  document.addEventListener('click',ev=>{const b=ev.target.closest('button.imp[data-help]'); if(b) toggleHelp(b.dataset.help);});
   $$('[data-set]').forEach(seg=>seg.querySelectorAll('button').forEach(b=>b.onclick=()=>{
     const k=seg.dataset.set, v=b.dataset.v;
     S[k] = /^\d+$/.test(v) ? (+v===1) : v;
     if(k==='confine'||k==='layer') S[k]=(v==='1');
-    syncInputs(); render();}));
-  const wp=e=>{applyWheel(S,e.target.value); syncInputs(); render();};
-  const fp=e=>{applyFloor(S,e.target.value); syncInputs(); render();};
-  $('#wPre').onchange=wp; $('#sWPre').onchange=wp;
-  $('#fPre').onchange=fp; $('#sFPre').onchange=fp;
-  $('#supportMode').onchange=e=>{S.supportMode=e.target.value;syncInputs();render();};
-  $('#liftedWheel').onchange=e=>{S.liftedWheel=Number(e.target.value);syncInputs();render();};
-  const link=(a,b,key,dec)=>{[a,b].forEach(id=>{const e=$('#'+id); if(!e)return;
-    e.addEventListener('input',()=>{S[key]=+e.value; syncInputs(); render();});});};
-  link('Dr','sD','D'); link('Lr','sL','L');
-  $('#sV').addEventListener('input',()=>{S.v=+$('#sV').value; syncInputs(); render();});
+    VSRC[k]='user'; syncInputs(); render();}));
+  $('#sWPre').onchange=e=>{applyWheel(S,e.target.value); markPresets('wheel'); VSRC.wPre='user'; syncInputs(); render();};
+  $('#sFPre').onchange=e=>{applyFloor(S,e.target.value); markPresets('floor'); VSRC.fPre='user'; syncInputs(); render();};
+  $('#supportMode').onchange=e=>{S.supportMode=e.target.value;VSRC.supportMode='user';syncInputs();render();};
+  $('#liftedWheel').onchange=e=>{S.liftedWheel=Number(e.target.value);VSRC.liftedWheel='user';syncInputs();render();};
+  [['sD','D'],['sL','L'],['sV','v']].forEach(([id,key])=>$('#'+id).addEventListener('input',e=>{
+    S[key]=+e.target.value; VSRC[key]='user'; syncInputs(); render();}));
+  /* 시나리오 값은 예시값이므로 모두 기본값으로 표시한다 */
   $('#scen').onchange=e=>{const k=e.target.value; if(!k)return;
     const T={...DEFAULTS}; const p=SCENARIOS[k].p;
     if(p.wPre) applyWheel(T,p.wPre); if(p.fPre) applyFloor(T,p.fPre);
-    Object.assign(T,p,{mode:S.mode,tab:S.tab}); S=T; openRungs.clear(); syncInputs(); render(); e.target.value='';};
+    Object.assign(T,p,{mode:S.mode,tab:S.tab}); S=T; VSRC=initialSources(); blankNotices.clear(); openRungs.clear(); syncInputs(); render(); e.target.value='';};
   $('#mEasy').onclick=()=>setMode('easy'); $('#mPro').onclick=()=>setMode('pro');
   $$('#tabs button').forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
   $('#railToggle').onclick=()=>{
@@ -986,7 +1085,7 @@ function buildUI(){
   $('#jumpResults').onclick=showResults;
   const mobile=matchMedia('(max-width:960px)');
   const adaptInputs=()=>{
-    $$('#rail .grp').forEach((d,i)=>d.open=!mobile.matches&&i<4);
+    $$('#rail .grp').forEach(d=>d.open=!mobile.matches&&!d.classList.contains('expert'));
     setRailVisible(S.mode==='pro'&&!mobile.matches);
   };
   mobile.addEventListener('change',adaptInputs);adaptInputs();
@@ -1002,12 +1101,12 @@ function buildUI(){
     document.documentElement.setAttribute('data-theme', dark?'light':'dark');
     $('#btnTheme').setAttribute('aria-label', dark?'다크 모드로 전환':'라이트 모드로 전환');
     render();};
-  $('#btnJson').onclick=()=>dl(`롤모델_설정_D${S.D}xL${S.L}.json`,'application/json',JSON.stringify({_app:'ROLLMODEL',_saved:new Date().toISOString(),...S},null,2));
+  $('#btnJson').onclick=()=>dl(`롤모델_설정_D${S.D}xL${S.L}.json`,'application/json',JSON.stringify({_app:'ROLLMODEL',_saved:new Date().toISOString(),...S,_sources:VSRC},null,2));
   resolveDownloads();
   $('#btnImp').onclick=()=>$('#fileImp').click();
   $('#fileImp').onchange=e=>{const f=e.target.files[0]; if(!f)return; const r=new FileReader();
-    r.onload=()=>{try{const next=importState(JSON.parse(r.result));
-      S=next; openRungs.clear(); const tab=S.tab; setMode(S.mode); setTab(S.mode==='easy'?'chain':tab);
+    r.onload=()=>{try{const raw=JSON.parse(r.result),next=importState(raw);
+      S=next; VSRC=importSources(raw,next); blankNotices.clear(); openRungs.clear(); const tab=S.tab; setMode(S.mode); setTab(S.mode==='easy'?'chain':tab);
       syncInputs(); render();}catch(err){alert(`설정 파일을 읽을 수 없습니다: ${err.message}`);}};
     r.readAsText(f); e.target.value='';};
   $('#btnSvg').onclick=exportSvg;
@@ -1038,23 +1137,23 @@ function syncInputs(){
   $('#supportMode').value=S.supportMode;
   $('#liftedWheel').value=String(S.liftedWheel);
   $('#threeSettings').hidden=S.supportMode!=='three';
-  $('#k3').disabled=S.loadMode==='build'&&S.supportMode==='three';
+  $('#triSettings').hidden=S.supportMode!=='tri';
+  $('#k3').disabled=S.loadMode==='build'&&S.supportMode!=='all';
+  const tri=S.supportMode==='tri';
+  $('label[for=wb]').textContent=tri?'구동부 간격 (전후)':INPUTS.wb.l;
+  $('label[for=tr]').textContent=tri?'캐스터 거리 (좌우)':INPUTS.tr.l;
   NUMS.forEach(id=>{const e=$('#'+id); if(e && document.activeElement!==e) e.value=S[id];});
   CHECKS.forEach(id=>{const e=$('#'+id); if(e) e.checked=!!S[id];});
-  ['Dr','sD'].forEach(i=>{const e=$('#'+i); if(e&&document.activeElement!==e)e.value=S.D;});
-  ['Lr','sL'].forEach(i=>{const e=$('#'+i); if(e&&document.activeElement!==e)e.value=S.L;});
-  const sv_=$('#sV'); if(sv_)sv_.value=S.v;
-  $('#Dv').textContent=`${S.D} mm`; $('#Lv').textContent=`${S.L} mm`;
-  $('#sDv').textContent=`${S.D}`; $('#sLv').textContent=`${S.L}`; $('#sVv').textContent=fmt(S.v,2);
-  $('#wPre').value=S.wPre; $('#sWPre').value=S.wPre;
-  $('#fPre').value=S.fPre; $('#sFPre').value=S.fPre;
+  [['sD','D'],['sL','L'],['sV','v']].forEach(([i,k])=>{const e=$('#'+i); if(e&&document.activeElement!==e)e.value=S[k];});
+  $$('[data-srctag]').forEach(t=>{const s=VSRC[t.dataset.srctag]||'default'; t.textContent=SOURCE_TAG[s]; t.dataset.s=s; t.title='값 출처: '+VALUE_SOURCES[s];});
+  $$('#strip [data-k],#rail [data-k]').forEach(el=>{const na=!inputRelevant(el.dataset.k,S); el.classList.toggle('na',na); el.title=na?'현재 조건에서는 계산에 쓰이지 않습니다':'';});
+  $('#sWPre').value=S.wPre; $('#sFPre').value=S.fPre;
   $$('[data-set]').forEach(seg=>{const k=seg.dataset.set;
     seg.querySelectorAll('button').forEach(b=>{
       const v=b.dataset.v, cur=S[k];
       const on = /^\d+$/.test(v) ? (!!cur === (+v===1)) : (cur===v);
       b.setAttribute('aria-pressed', String(on));});});
-  $$('[data-show]').forEach(el=>{el.style.display = (el.dataset.show===S.loadMode)
-    ? (el.classList.contains('field')?'grid':'flex') : 'none';});
+  $$('[data-show]').forEach(el=>{el.hidden = el.dataset.show!==S.loadMode;});
 }
 
 function setRailVisible(visible){
@@ -1155,9 +1254,13 @@ function exportCsv(){
   dl(`롤모델_조합매트릭스_D${S.D}xL${S.L}.csv`,'text/csv;charset=utf-8','﻿'+rows.map(r=>r.map(v=>`"${v}"`).join(',')).join('\n'));
 }
 
+/* 검증 메시지의 키 이름 앞에 입력 라벨을 붙인다 */
+const prettyError=msg=>String(msg).replace(/^([A-Za-z0-9]+):/,(m,k)=>INPUTS[k]?`${INPUTS[k].l} (${k}):`:m);
+
 /* ══════════════════════════════════════════════ 메인 */
 function render(){
-  const c=compute(S);
+  const missing=missingInputs(S);
+  const c=missing.length?{error:missing.map(k=>`"${inputMeta(k).l}" 값을 입력하세요.`).join(' '),missing}:compute(S);
   if(!c.ok){
     C=null; clearTimeout(fixesTimer);
     if(rafTween)cancelAnimationFrame(rafTween); if(rafRoll)cancelAnimationFrame(rafRoll);
@@ -1169,16 +1272,16 @@ function render(){
     $$('[data-enlarge]').forEach(b=>b.disabled=true);
     $('#verdict').dataset.s='bad';
     $('#verdict').innerHTML=`<div class="verdict-h"><div class="vmark">×</div><div class="vtxt">
-      <h2>입력값을 계산할 수 없습니다</h2><p>${esc(c.error)}</p></div></div>`;
+      <h2>${c.missing?'필수 입력이 비어 있어 계산할 수 없습니다':'입력값을 계산할 수 없습니다'}</h2><p>${esc(prettyError(c.error))}</p></div></div>`;
     $('#alerts').innerHTML=''; $('#ladder').innerHTML=''; $('#fixCard').hidden=true;
     $('#figSection').replaceChildren(); $('#figLegend').innerHTML='';
-    updateTags(null); return;
+    renderQuality(null); updateTags(null); return;
   }
   C=c;
   $('#btnSvg').disabled=false; $('#btnCsv').disabled=false; $('#btnJson').disabled=false;
   $$('[data-enlarge]').forEach(b=>b.disabled=false);
   renderVerdict(c); renderAlerts(c); renderLadder(c); renderFixes(c);
-  renderLoad(c); renderResults(c);
+  renderQuality(c); renderLoad(c); renderResults(c);
   tween({b:c.r.b, R:c.r.R1, pen:c.r.delta, pmax:c.r.pmax, Le:c.Le}, ()=>{
     $('#figSection').replaceChildren(figSection(c));
     $('#figPlan').replaceChildren(figPlan(c));
@@ -1204,6 +1307,9 @@ function updateTags(c){
   t('tgWheel',`D${S.D}×L${S.L}`);
   t('tgFloor',S.fT>0?`t ${fmt(S.fT,1)} mm`:'무도장');
   t('tgRun',  `${fmt(S.v,1)} m/s`);
+  t('tgCrit', `SF ${fmt(S.SF,2)}`);
+  $$('[data-defcount]').forEach(el=>{const n=Object.keys(INPUTS).filter(k=>INPUTS[k].g===el.dataset.defcount&&INPUTS[k].t==='imp'&&typeof DEFAULTS[k]==='number'&&inputRelevant(k,S)&&VSRC[k]==='default').length;
+    el.textContent=n?` · 기본값 ${n}개`:'';});
   t('tgOpt',  `${S.confine?'구속 ON':'구속 OFF'} · ${S.layer?'층상 ON':'층상 OFF'}`);
   const hc=$('#hintConc'); if(hc) hc.innerHTML=
     `E_c = <b>${fmt(concreteE(S),0)}</b> MPa · 지압 0.85·f_ck·√(A₂/A₁) = <b>${fmt(concreteBearing(S),1)}</b> MPa · 인장 f_ctm = <b>${fmt(concreteTens(S),2)}</b> MPa`;
@@ -1211,9 +1317,12 @@ function updateTags(c){
     ? `휠 ${c.LC.n}개 · 지지점 ${c.LC.supportCount}개 · 최대 분담 <b>${fmt(c.LC.fracMax*100,1)}%</b> · 최소 <b>${fmt(c.LC.fracMin*100,1)}%</b>`
     : '직접 입력 모드';
   const sf=$('#sF'); if(sf&&c){ sf.textContent=fmt(c.Fop,0);
-    $('#sFsub').innerHTML=`${fmt(c.Fop/S.g,0)} kg · 피크 <b>${fmt(c.Fpk/S.g,0)}</b> kg${c.LC.grid?`<br>${S.nRow}열 × ${S.nCol}행 · ${c.LC.n}바퀴 / ${c.LC.supportCount}점 지지`:''}`; }
-  if(c) $('#supportReadout').innerHTML=c.LC.grid&&S.supportMode==='three'
-    ? `<b>바퀴별 반력 · 평탄도/충격 적용 전</b><div class="support-grid">${c.LC.fractions.map((r,i)=>`<span data-s="${i===S.liftedWheel?'off':r < -1e-10?'bad':'on'}">${i+1}번 · x${c.LC.grid.xs[i]<0?'−':'+'} / y${c.LC.grid.ys[i]<0?'−':'+'}<strong>${i===S.liftedWheel?'비접지':`${fmt(r*c.LC.W*S.g,0)} N`}</strong><small>${fmt(100*r,1)}%</small></span>`).join('')}</div><p class="hint">${c.LC.lift?'합력 작용점이 지지 삼각형 밖입니다. 음의 반력을 0으로 보정하지 않습니다.':c.LC.marginal?'지지 삼각형 경계 · 전도 여유 없음':'3점 지지 삼각형 내부'}</p>` : '';
+    $('#sFsub').innerHTML=`${fmt(c.Fop/S.g,0)} kg · 피크 <b>${fmt(c.Fpk/S.g,0)}</b> kg${c.LC.grid?`<br>${c.LC.grid.tri?'3점 접지 · 구동부 2 + 캐스터 1':`${S.nRow}열 × ${S.nCol}행 · ${c.LC.n}바퀴 / ${c.LC.supportCount}점 지지`}`:''}`; }
+  if(c) $('#supportReadout').innerHTML=c.LC.grid&&S.supportMode!=='all'
+    ? `<b>접지점별 반력 · 평탄도/충격 적용 전</b><div class="support-grid">${c.LC.fractions.map((r,i)=>{
+      const off=S.supportMode==='three'&&i===S.liftedWheel, G=c.LC.grid;
+      const name=G.tri?`${G.names[i]} · ${i<2?`x${G.xs[i]<0?'−':'+'}`:'y+'}`:`${i+1}번 · x${G.xs[i]<0?'−':'+'} / y${G.ys[i]<0?'−':'+'}`;
+      return `<span data-s="${off?'off':r < -1e-10?'bad':'on'}">${name}<strong>${off?'비접지':`${fmt(r*c.LC.W*S.g,0)} N`}</strong><small>${fmt(100*r,1)}%</small></span>`;}).join('')}</div><p class="hint">${c.LC.lift?'합력 작용점이 지지 삼각형 밖입니다. 음의 반력을 0으로 보정하지 않습니다.':c.LC.marginal?'지지 삼각형 경계 · 전도 여유 없음':'3점 지지 삼각형 내부'}</p>` : '';
   if(c){
     $('#sWsub').innerHTML=`E ${fmt(S.wE,0)} MPa → 겉보기 <b>${fmt(c.r.E1e,0)}</b> · 허용 ${fmt(c.allow.wheel,1)} MPa`;
     $('#sFfsub').innerHTML=`전달압 <b>${fmt(c.pSub,1)}</b> / 허용 ${fmt(c.allow.conc,1)} MPa`;
