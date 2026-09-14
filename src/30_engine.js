@@ -23,6 +23,7 @@ const SRC = {
   aciB   :{t:'콘크리트 지압강도',           c:'code',     r:'ACI 318-19 §22.8.3  0.85·f_ck·√(A2/A1), √비 ≤ 2'},
   fibT   :{t:'콘크리트 인장강도',           c:'code',     r:'fib Model Code 2010 식 5.1-3a/b: f_ck≤50 → 0.30·f_ck^(2/3), f_ck>50 → 2.12·ln(1+(f_ck+8)/10). fib StructuralCodes 공식 구현과 대조.'},
   rigid  :{t:'강체 프레임 탄성 반력 분배',  c:'theory',   r:'등강성 지지점 위 강체, 1축 굽힘 중첩'},
+  three  :{t:'3점 지지 강체 평형', c:'theory', r:'ΣR = W·g, ΣR·x = W·g·eₓ, ΣR·y = W·g·e_y. Engineering Statics §5.5 https://engineeringstatics.org/Chapter_05-3d-rigid-body-equilibrium.html'},
   edge   :{t:'유한길이 단부 응력집중',      c:'empirical',r:'유한길이 롤러 실측/FEM 통상 범위 K = 2~3 (예리단부)'},
   step   :{t:'단차 충격 상한',              c:'approx',   r:'운동량–접촉강성 상한 + 감쇠 보정계수'},
   mat    :{t:'재료 물성 통상값',            c:'ref',      r:'제조사 데이터시트 통상 범위 — 실제 값으로 교체 권장'},
@@ -190,15 +191,34 @@ function loadChain(S){
   if(exd||eyd) rows.push({k:`동하중 등가편심  eₓ +${exd.toFixed(0)} / e_y +${eyd.toFixed(0)}`,
                           v:Math.hypot(exd,eyd), u:'mm', src:'rigid',
                           sub:`e_dyn = (a/g)·h_cg — 가감속·선회 하중이동은 편심과 수학적으로 동일`});
-  const fr = G.xs.map((x,i)=> 1/G.n + (G.sx>0? exq*x/G.sx:0) + (G.sy>0? eyq*G.ys[i]/G.sy:0));
-  const fracMax = Math.max(...fr), fracMin = Math.min(...fr);
-  rows.push({k:'최대 휠 분담률', v:fracMax, u:'×', src:'rigid',
-             sub:`1/${G.n} + e_x·x_i/Σx² + e_y·y_i/Σy²  (Σx²=${G.sx.toFixed(0)}, Σy²=${G.sy.toFixed(0)} mm²)`});
-  if(fracMin<0) rows.push({k:'최소 휠 분담률 — 음수, 휠 들림', v:fracMin, u:'×', bad:true});
-  rows.push({k:'바닥 평탄도 재분배 계수', v:S.k3, u:'×'});
-  const Fop = W*S.g*fracMax*S.k3;
+  const three=S.supportMode==='three';
+  const active=G.xs.map((_,i)=>i).filter(i=>!three||i!==S.liftedWheel);
+  let fr;
+  if(three){
+    // Normalize coordinates before barycentric evaluation; the rectangle's
+    // three remaining corners always form a nondegenerate triangle.
+    const [a,b,c]=active, x=G.xs.map(v=>v/S.wb), y=G.ys.map(v=>v/S.tr);
+    const px=exq/S.wb, py=eyq/S.tr;
+    const det=(y[b]-y[c])*(x[a]-x[c])+(x[c]-x[b])*(y[a]-y[c]);
+    fr=Array(G.n).fill(0);
+    fr[a]=((y[b]-y[c])*(px-x[c])+(x[c]-x[b])*(py-y[c]))/det;
+    fr[b]=((y[c]-y[a])*(px-x[c])+(x[a]-x[c])*(py-y[c]))/det;
+    fr[c]=1-fr[a]-fr[b];
+    rows.push({k:`3점 접지 · ${S.liftedWheel+1}번 비접지`,v:active.length,u:'EA',src:'three'});
+  }else fr=G.xs.map((x,i)=> 1/G.n + (G.sx>0? exq*x/G.sx:0) + (G.sy>0? eyq*G.ys[i]/G.sy:0));
+  const fracMax = Math.max(...active.map(i=>fr[i])), fracMin = Math.min(...active.map(i=>fr[i]));
+  const lift=fracMin < -1e-10, marginal=three&&!lift&&fracMin<=1e-10;
+  const source=three?'three':'rigid';
+  const expr=three?'Σr_i = 1; Σr_i·x_i = eₓ; Σr_i·y_i = e_y; 비접지 r = 0'
+    :`1/${G.n} + e_x·x_i/Σx² + e_y·y_i/Σy²  (Σx²=${G.sx.toFixed(0)}, Σy²=${G.sy.toFixed(0)} mm²)`;
+  rows.push({k:'최대 휠 분담률', v:fracMax, u:'×', src:source, sub:expr});
+  if(lift) rows.push({k:'최소 휠 분담률 — 음수, 지지 불가', v:fracMin, u:'×', bad:true});
+  const flatFactor=three?1:S.k3;
+  rows.push({k:three?'3점 정정 지지 — 평탄도 재분배 중복 적용 안 함':'바닥 평탄도 재분배 계수', v:flatFactor, u:'×'});
+  const Fop = W*S.g*fracMax*flatFactor;
   rows.push({k:'주행 하중  F_op', v:Fop, u:'N', total:true});
-  return {Fop, Fpk:Fop, rows, lift:fracMin<0, fracMax, fracMin, W, n:G.n, exq, eyq, grid:G};
+  return {Fop, Fpk:Fop, rows, lift, marginal, fracMax, fracMin, W, n:G.n, exq, eyq, grid:G,
+    fractions:fr, active, supportCount:active.length, flatFactor, source, expr};
 }
 
 /* 단차 통과 충격계수 — 운동량·접촉강성 상한에 감쇠 보정 η */

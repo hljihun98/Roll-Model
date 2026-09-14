@@ -83,3 +83,48 @@ test('a failing legacy assertion sets a failing process exit code',()=>{
   const mock={exitCode:0};vm.runInNewContext(header+"\nok('forced failure',false);\n"+footer,{process:mock,console:{log(){}}});
   assert.equal(mock.exitCode,1);
 });
+
+test('default layout is four wheels and old imports retain their layout',()=>{
+  assert.equal(e.DEFAULTS.nRow,2);assert.equal(e.DEFAULTS.nCol,2);
+  const old=mk({nRow:4});delete old.supportMode;delete old.liftedWheel;
+  const imported=e.importState(old);
+  assert.equal(imported.nRow,4);assert.equal(imported.supportMode,'all');
+});
+test('three-point reactions satisfy force and both moments for every missing corner',()=>{
+  for(let missing=0;missing<4;missing++)for(const [wb,tr] of [[2600,1400],[1e-3,1e6]]){
+    const coords=[[-wb/2,-tr/2],[-wb/2,tr/2],[wb/2,-tr/2],[wb/2,tr/2]];
+    const active=coords.map((_,i)=>i).filter(i=>i!==missing);
+    for(const weights of [[.2,.3,.5],[1/3,1/3,1/3],[.01,.89,.1]]){
+      const ex=active.reduce((v,i,j)=>v+coords[i][0]*weights[j],0);
+      const ey=active.reduce((v,i,j)=>v+coords[i][1]*weights[j],0);
+      const s=mk({supportMode:'three',liftedWheel:missing,wb,tr,ex,ey,ax:0,ay:0,kSauto:false,kS:1});
+      const c=e.compute(s),lc=c.LC;assert.ok(c.ok);
+      assert.equal(lc.fractions[missing],0);assert.equal(lc.supportCount,3);
+      active.forEach((i,j)=>near(lc.fractions[i],weights[j]));
+      near(lc.fractions.reduce((a,r)=>a+r,0),1);
+      near(lc.fractions.reduce((a,r,i)=>a+r*coords[i][0]/wb,0),ex/wb);
+      near(lc.fractions.reduce((a,r,i)=>a+r*coords[i][1]/tr,0),ey/tr);
+      near(lc.Fop,(s.Wtare+s.Wload)*s.g*Math.max(...weights));
+      near(e.compute({...s,k3:3}).Fop,lc.Fop);
+      assert.equal(c.G.load.s,'ok');
+      near(e.compute(e.importState(JSON.parse(JSON.stringify(s)))).Fop,c.Fop);
+    }
+  }
+});
+test('three-point center is a two-reaction boundary, outside is rejected, acceleration moves reactions',()=>{
+  const s={supportMode:'three',liftedWheel:0,ex:0,ey:0,ax:0,ay:0,kSauto:false,kS:1};
+  const center=run(s);near(center.LC.fracMax,.5);assert.equal(center.G.load.s,'warn');
+  const outside=run({...s,ex:-500,ey:-300});assert.equal(outside.G.load.s,'bad');assert.equal(outside.worst,'bad');
+  assert.ok(outside.LC.fracMin<0);assert.equal(e.suggest(mk({...s,ex:-500,ey:-300})).items.length,0);
+  const dynamic=run({...s,ex:100,ey:100,ax:1,ay:.5});
+  const equivalent=run({...s,ex:100+400/9.81,ey:100+200/9.81});
+  dynamic.LC.fractions.forEach((r,i)=>near(r,equivalent.LC.fractions[i]));
+  assert.equal(dynamic.G.load.s,'ok');
+});
+test('invalid support selections cannot enter the engine or imported settings',()=>{
+  for(const p of [{supportMode:'invalid'},{liftedWheel:4},{liftedWheel:-1},{liftedWheel:1.5},{liftedWheel:'0'},
+    {supportMode:'three',nRow:4},{supportMode:'three',nCol:1}]){
+    assert.ok(!run(p).ok);assert.throws(()=>e.importState(mk(p)));
+  }
+  near(run({loadMode:'direct',supportMode:'three',nRow:4,Fdirect:6000}).Fop,6000);
+});

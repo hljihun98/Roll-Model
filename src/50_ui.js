@@ -60,6 +60,14 @@ const RAIL_HTML = `
     <div class="rule"></div>
     <div class="field"><label>휠 열 수 (전후)</label><div class="inp"><input type="number" id="nRow" step="1" min="1"><span class="unit">열</span></div></div>
     <div class="field"><label>휠 행 수 (좌우)</label><div class="inp"><input type="number" id="nCol" step="1" min="1"><span class="unit">행</span></div></div>
+    <label class="hint" for="supportMode">접지 조건</label>
+    <select id="supportMode"><option value="all">전체 바퀴 접지</option><option value="three">3점 접지 · 4바퀴 중 1개 비접지</option></select>
+    <div id="threeSettings" hidden>
+      <label class="hint" for="liftedWheel">바닥에 닿지 않는 바퀴</label>
+      <select id="liftedWheel"><option value="0">1번 · x− / y−</option><option value="1">2번 · x− / y+</option><option value="2">3번 · x+ / y−</option><option value="3">4번 · x+ / y+</option></select>
+      <p class="hint">2열 × 2행 전용. x는 전후, y는 좌우이며 원점은 배치 중심입니다. 3점에서는 평탄도 재분배 계수를 중복 적용하지 않습니다.</p>
+    </div>
+    <div id="supportReadout" class="support-readout" aria-live="polite"></div>
     <div class="field"><label>축거 (전후 전장)</label><div class="inp"><input type="number" id="wb" step="50"><span class="unit">mm</span></div></div>
     <div class="field"><label>윤거 (좌우 전폭)</label><div class="inp"><input type="number" id="tr" step="50"><span class="unit">mm</span></div></div>
     <div class="field"><label>무게중심 편심 eₓ</label><div class="inp"><input type="number" id="ex" step="10"><span class="unit">mm</span></div></div>
@@ -243,10 +251,10 @@ function renderLadder(c){
   rows.push({id:'load',stage:1,sym:'F_pk',title:'설계하중 산출',s:c.G.load.s,
     v:c.Fpk,u:'N',lim:`주행 ${fmt(c.Fop,0)} N`,
     why:`${S.loadMode==='direct'?'직접 입력 — 입력값을 주행하중으로 봅니다':`휠 ${c.LC.n}개 중 최대 분담 ${fmt(c.LC.fracMax*100,1)}%`} · 단차 충격 ×${fmt(c.kSeff,2)} 적용 후 피크 ${fmt(c.Fpk/S.g,0)} kg`,
-    rat:{expr:'R_i = W·g·[1/n + e_x·x_i/Σx² + e_y·y_i/Σy²] · k_flat     e_dyn = (a/g)·h_cg',
+    rat:{expr:S.loadMode==='direct'?'F_pk = F_direct · kS':`${c.LC.expr}; F_op = W·g·max(r_i)·${c.LC.flatFactor}; e_dyn = (a/g)·h_cg`,
          subs:c.LC.rows.map(r=>`${r.k} = ${fmt(r.v,r.u==='×'?4:1)} ${r.u}`).join('\n'),
-         src:'rigid',
-         note:'가감속·선회에 의한 하중이동은 (a/g)·h_cg 크기의 등가편심과 수학적으로 같으므로 기하편심에 합산했습니다. 원본 계산기는 휠 수와 무관하게 4점을 가정했고, 동하중을 근거 없는 배수로 곱했습니다.'}});
+         src:c.LC.source||'rigid',
+         note:'가감속 하중이동은 등가편심으로 합산합니다. 3점 지지는 힘·모멘트 평형으로 풀며 평탄도 계수를 추가 적용하지 않습니다. 단차 충격은 이후 피크 하중에 반영합니다.'}});
   c.gates.forEach(g=>rows.push({...g,id:g.id==='load'?'loadValidity':g.id}));
 
   let last=0;
@@ -956,6 +964,8 @@ function buildUI(){
   const fp=e=>{applyFloor(S,e.target.value); syncInputs(); render();};
   $('#wPre').onchange=wp; $('#sWPre').onchange=wp;
   $('#fPre').onchange=fp; $('#sFPre').onchange=fp;
+  $('#supportMode').onchange=e=>{S.supportMode=e.target.value;syncInputs();render();};
+  $('#liftedWheel').onchange=e=>{S.liftedWheel=Number(e.target.value);syncInputs();render();};
   const link=(a,b,key,dec)=>{[a,b].forEach(id=>{const e=$('#'+id); if(!e)return;
     e.addEventListener('input',()=>{S[key]=+e.value; syncInputs(); render();});});};
   link('Dr','sD','D'); link('Lr','sL','L');
@@ -1025,6 +1035,10 @@ function buildUI(){
 }
 
 function syncInputs(){
+  $('#supportMode').value=S.supportMode;
+  $('#liftedWheel').value=String(S.liftedWheel);
+  $('#threeSettings').hidden=S.supportMode!=='three';
+  $('#k3').disabled=S.loadMode==='build'&&S.supportMode==='three';
   NUMS.forEach(id=>{const e=$('#'+id); if(e && document.activeElement!==e) e.value=S[id];});
   CHECKS.forEach(id=>{const e=$('#'+id); if(e) e.checked=!!S[id];});
   ['Dr','sD'].forEach(i=>{const e=$('#'+i); if(e&&document.activeElement!==e)e.value=S.D;});
@@ -1149,7 +1163,7 @@ function render(){
     if(rafTween)cancelAnimationFrame(rafTween); if(rafRoll)cancelAnimationFrame(rafRoll);
     ['figSection','figPlan','figDepth','figSurf','figThermal','figReverse','figLegend','planLegend','depthLegend','surfLegend',
       'thermalLegend','revLegend','results','loadChainList','thStats','mx'].forEach(id=>$('#'+id).replaceChildren());
-    ['sF','sFsub','sWsub','sFfsub','sVsub','sMsub','figTag','planTag','rollNote','thTag','rvTag','resTag','loadTag','mxTag','hintFrac'].forEach(id=>$('#'+id).textContent='—');
+    ['sF','sFsub','sWsub','sFfsub','sVsub','sMsub','figTag','planTag','rollNote','thTag','rvTag','resTag','loadTag','mxTag','hintFrac','supportReadout'].forEach(id=>$('#'+id).textContent='—');
     if($('#btnCal'))$('#btnCal').disabled=true;
     $('#btnSvg').disabled=true; $('#btnCsv').disabled=true; $('#btnJson').disabled=true;
     $$('[data-enlarge]').forEach(b=>b.disabled=true);
@@ -1194,10 +1208,12 @@ function updateTags(c){
   const hc=$('#hintConc'); if(hc) hc.innerHTML=
     `E_c = <b>${fmt(concreteE(S),0)}</b> MPa · 지압 0.85·f_ck·√(A₂/A₁) = <b>${fmt(concreteBearing(S),1)}</b> MPa · 인장 f_ctm = <b>${fmt(concreteTens(S),2)}</b> MPa`;
   const hf=$('#hintFrac'); if(hf&&c) hf.innerHTML= c.LC.grid
-    ? `휠 ${c.LC.n}개 · 최대 분담 <b>${fmt(c.LC.fracMax*100,1)}%</b> (균등 ${fmt(100/c.LC.n,1)}%) · 최소 <b>${fmt(c.LC.fracMin*100,1)}%</b>`
+    ? `휠 ${c.LC.n}개 · 지지점 ${c.LC.supportCount}개 · 최대 분담 <b>${fmt(c.LC.fracMax*100,1)}%</b> · 최소 <b>${fmt(c.LC.fracMin*100,1)}%</b>`
     : '직접 입력 모드';
   const sf=$('#sF'); if(sf&&c){ sf.textContent=fmt(c.Fop,0);
-    $('#sFsub').innerHTML=`${fmt(c.Fop/S.g,0)} kg · 피크 <b>${fmt(c.Fpk/S.g,0)}</b> kg`; }
+    $('#sFsub').innerHTML=`${fmt(c.Fop/S.g,0)} kg · 피크 <b>${fmt(c.Fpk/S.g,0)}</b> kg${c.LC.grid?`<br>${S.nRow}열 × ${S.nCol}행 · ${c.LC.n}바퀴 / ${c.LC.supportCount}점 지지`:''}`; }
+  if(c) $('#supportReadout').innerHTML=c.LC.grid&&S.supportMode==='three'
+    ? `<b>바퀴별 반력 · 평탄도/충격 적용 전</b><div class="support-grid">${c.LC.fractions.map((r,i)=>`<span data-s="${i===S.liftedWheel?'off':r < -1e-10?'bad':'on'}">${i+1}번 · x${c.LC.grid.xs[i]<0?'−':'+'} / y${c.LC.grid.ys[i]<0?'−':'+'}<strong>${i===S.liftedWheel?'비접지':`${fmt(r*c.LC.W*S.g,0)} N`}</strong><small>${fmt(100*r,1)}%</small></span>`).join('')}</div><p class="hint">${c.LC.lift?'합력 작용점이 지지 삼각형 밖입니다. 음의 반력을 0으로 보정하지 않습니다.':c.LC.marginal?'지지 삼각형 경계 · 전도 여유 없음':'3점 지지 삼각형 내부'}</p>` : '';
   if(c){
     $('#sWsub').innerHTML=`E ${fmt(S.wE,0)} MPa → 겉보기 <b>${fmt(c.r.E1e,0)}</b> · 허용 ${fmt(c.allow.wheel,1)} MPa`;
     $('#sFfsub').innerHTML=`전달압 <b>${fmt(c.pSub,1)}</b> / 허용 ${fmt(c.allow.conc,1)} MPa`;

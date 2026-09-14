@@ -8,25 +8,27 @@
 <title>롤모델</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@500;600&display=swap">
 <style>
 /* ═══════════════════════════════════════════════ 토큰 ═══ */
 :root{
-  --bg:#FBFCFD; --surface:#FFFFFF; --surface2:#F4F7F9; --sunk:#F8FAFC;
-  --ink:#0B1418; --ink2:#4A5A66; --ink3:#6E7C87;
-  --line:#E5EAEF; --line2:#CDD7DF;
-  --accent:#14527D; --accent-soft:#EAF2F9; --accent-ink:#0E3B5C;
+  --bg:#F4F6F8; --surface:#FFFFFF; --surface2:#F4F6F8; --sunk:#F8FAFC;
+  --ink:#1B1F24; --ink2:#3D4450; --ink3:#6B7280;
+  --line:#E5E8EC; --line2:#D7DCE2;
+  --accent:#2563EB; --accent-soft:#EAF1FE; --accent-ink:#1D4ED8;
   --ok:#1C6845;  --ok-bg:#EDF7F1;  --ok-line:#B4D9C4;
   --warn:#8A5606;--warn-bg:#FCF4E4;--warn-line:#E8CE9B;
   --bad:#9E2A21; --bad-bg:#FDEFED; --bad-line:#EEBCB5;
   --pu:#B5652F; --nylon:#4E6E8C; --rubber:#43443F; --steel:#6F7C88;
   --concrete:#98A09C; --epoxy:#1E7A72;
-  --sans:'IBM Plex Sans KR',system-ui,-apple-system,'Malgun Gothic',sans-serif;
-  --cond:'IBM Plex Sans Condensed','IBM Plex Sans KR',system-ui,sans-serif;
+  --sans:'Pretendard Variable',Pretendard,-apple-system,'Inter','Malgun Gothic',sans-serif;
+  --cond:'Inter','Pretendard Variable','Malgun Gothic',sans-serif;
   --mono:'IBM Plex Mono',ui-monospace,'SFMono-Regular',Menlo,monospace;
-  --r:3px; --r2:6px;
+  --r:8px; --r2:14px;
   --t:180ms cubic-bezier(.3,.7,.3,1);
-  --shadow:0 1px 2px rgba(11,20,24,.04), 0 6px 20px -14px rgba(11,20,24,.16);
+  --shadow:0 1px 2px rgba(16,24,40,.04), 0 1px 3px rgba(16,24,40,.06);
 }
 /* 이 페이지는 화이트 톤으로 고정합니다. 시스템이 다크여도 밝게 열리고,
    상단 토글로 명시적으로 선택했을 때만 다크로 바뀝니다. */
@@ -429,6 +431,50 @@ body[data-mode="pro"] .easy-only{display:none}
 .guide-foot{border-top:1px solid var(--line);padding:14px 24px}.guide-foot>span{font-family:var(--mono);font-size:12px;color:var(--ink3)}.guide-foot>div{display:flex;gap:8px}.guide .guide-primary{background:var(--accent);border-color:var(--accent);color:var(--surface);min-width:90px}.guide button:disabled{opacity:.45;cursor:default}
 @media(max-width:600px){.guide-head{padding:14px 16px;gap:8px}.guide-head h2{font-size:16px}.guide-head .eyebrow{font-size:9px}.guide-body{grid-template-columns:1fr;gap:12px;padding:16px;max-height:calc(100dvh - 185px)}.guide-copy h3{font-size:19px}.guide-copy p{font-size:13px;margin-bottom:10px}.guide-copy .guide-effect{font-size:12px}.guide-demo{padding:12px}.guide-demo svg{max-height:120px}.guide-foot{padding:12px 16px}}
 @media(prefers-reduced-motion:reduce){.guide-progress span,.guide-vectors line{transition:none}}
+.support-readout{font-size:11px}
+.support-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:8px 0}
+.support-grid>span{padding:8px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface2)}
+.support-grid strong,.support-grid small{display:block}
+.support-grid [data-s="off"]{border-style:dashed;color:var(--ink3)}
+.support-grid [data-s="bad"]{background:var(--bad-bg);color:var(--bad);border-color:var(--bad-line)}
+/* SMART Maintenance의 앱바, 카드, 컨트롤 디자인을 공유한다. */
+.top{padding:14px 24px;gap:14px}
+.brand{position:relative;padding-left:44px;min-height:34px;justify-content:center}
+.brand::before{content:'R';position:absolute;left:0;top:0;width:34px;height:34px;display:grid;place-items:center;border-radius:11px;background:var(--accent-soft);color:var(--accent);font-family:var(--cond);font-size:21px;font-weight:700}
+.brand b{font-size:16px;font-weight:700;letter-spacing:-.025em}
+.brand span{font-family:var(--cond);font-size:10px;margin-top:3px}
+.modesw{border-radius:10px;padding:3px}
+.modesw button{border-radius:7px;padding:6px 14px}
+.modesw button[aria-pressed="true"]{color:var(--accent);font-weight:600}
+.tbtn{border-radius:8px;padding:6px 11px;font-weight:500}
+.iconb{width:32px;height:32px;padding:0}
+#btnGuide{background:var(--accent-soft);color:var(--accent);border-color:transparent}
+.scenario-panel{border-left:4px solid var(--accent);box-shadow:var(--shadow);padding:18px 20px}
+.scenario-panel label{font-size:15px;font-weight:700;color:var(--ink)}
+.scenario-panel #scen{padding:10px 12px;border-radius:8px;background:var(--surface2)}
+.card,.strip,.verdict,.ladder{box-shadow:var(--shadow)}
+.card-h,.ladder-h{background:var(--surface);padding:14px 16px}
+.card-h b,.ladder-h b{font-size:13px;font-weight:700}
+.visual-column .card-h{padding:12px 14px;border-top:3px solid var(--accent)}
+#planCard .card-h{border-top-color:var(--epoxy)}
+.figure-notes>summary{background:var(--sunk);padding:9px 12px}
+.input-title{font-weight:700}
+.tabs{gap:4px;padding:4px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+.tabs button{border-radius:7px;margin:0;border-bottom:0;padding:8px 12px}
+.tabs button[aria-selected="true"]{background:var(--accent-soft);color:var(--accent)}
+.conf{border-radius:999px;letter-spacing:0}
+.vmark{border-radius:11px}
+.vtxt h2{font-weight:700}
+.rung[open]>summary{background:var(--sunk)}
+.rail-heading{background:var(--surface)}
+@media(max-width:760px){
+  .top{padding:10px 12px;gap:8px}
+  .brand{padding-left:38px;min-height:30px}
+  .brand::before{width:30px;height:30px;font-size:18px;border-radius:9px}
+  .brand b{font-size:14px}
+  .modesw button{padding:5px 11px}
+  .scenario-panel{padding:14px}
+}
 </style>
 </head>
 <body>
@@ -553,7 +599,8 @@ const DEFAULTS = {
   /* 하중 */
   loadMode:'build', Fdirect:6343.83,
   Wtare:900, Wload:1600, g:9.81,
-  nRow:4, nCol:2, wb:2600, tr:1400, ex:150, ey:50,
+  nRow:2, nCol:2, wb:2600, tr:1400, ex:150, ey:50,
+  supportMode:'all', liftedWheel:0,
   k3:1.15, ax:1.0, ay:1.0, hcg:400,
   kSauto:true, kS:1.5, hstep:3, etaImp:0.40, mUns:1.0,
   maneuver:'drive', muMan:0.15, grade:0,
@@ -584,14 +631,14 @@ const DEFAULTS = {
 };
 
 const SCENARIOS = {
-  park_sedan:{n:'주차로봇 · 승용차', d:'1.6 t 차량 + 0.9 t 대차 · 8휠 · 에폭시 라이닝',
-    p:{loadMode:'build',Wtare:900,Wload:1600,nRow:4,nCol:2,wb:2600,tr:1400,ex:150,ey:50,hcg:400,
+  park_sedan:{n:'주차로봇 · 승용차', d:'1.6 t 차량 + 0.9 t 대차 · 4휠 · 에폭시 라이닝',
+    p:{loadMode:'build',Wtare:900,Wload:1600,nRow:2,nCol:2,wb:2600,tr:1400,ex:150,ey:50,hcg:400,
        wPre:'pu95',D:200,L:80,edgeR:2,crown:0,fPre:'lin3',v:1.0,duty:.5,maneuver:'drive'}},
   park_suv:{n:'주차로봇 · SUV', d:'2.4 t 차량 + 1.1 t 대차 · 8휠 · Vulkollan급',
     p:{loadMode:'build',Wtare:1100,Wload:2400,nRow:4,nCol:2,wb:2800,tr:1500,ex:200,ey:80,hcg:450,
        wPre:'puv',D:250,L:90,edgeR:2.5,crown:0,fPre:'lin6',v:0.8,duty:.5,maneuver:'drive'}},
   spin:{n:'제자리 선회 검토', d:'승용차 조건에서 스핀 턴 — 도막 박리 지배 케이스',
-    p:{loadMode:'build',Wtare:900,Wload:1600,nRow:4,nCol:2,wb:2600,tr:1400,ex:150,ey:50,hcg:400,
+    p:{loadMode:'build',Wtare:900,Wload:1600,nRow:2,nCol:2,wb:2600,tr:1400,ex:150,ey:50,hcg:400,
        wPre:'pu95',D:200,L:80,edgeR:2,crown:0,fPre:'coat',v:0.3,duty:.2,maneuver:'spin',ax:0}},
   agv:{n:'소형 물류 AGV', d:'1 t급 · 4휠 · 박막 에폭시 코팅',
     p:{loadMode:'build',Wtare:300,Wload:1000,nRow:2,nCol:2,wb:900,tr:700,ex:60,ey:40,hcg:300,
@@ -627,6 +674,7 @@ const SRC = {
   aciB   :{t:'콘크리트 지압강도',           c:'code',     r:'ACI 318-19 §22.8.3  0.85·f_ck·√(A2/A1), √비 ≤ 2'},
   fibT   :{t:'콘크리트 인장강도',           c:'code',     r:'fib Model Code 2010 식 5.1-3a/b: f_ck≤50 → 0.30·f_ck^(2/3), f_ck>50 → 2.12·ln(1+(f_ck+8)/10). fib StructuralCodes 공식 구현과 대조.'},
   rigid  :{t:'강체 프레임 탄성 반력 분배',  c:'theory',   r:'등강성 지지점 위 강체, 1축 굽힘 중첩'},
+  three  :{t:'3점 지지 강체 평형', c:'theory', r:'ΣR = W·g, ΣR·x = W·g·eₓ, ΣR·y = W·g·e_y. Engineering Statics §5.5 https://engineeringstatics.org/Chapter_05-3d-rigid-body-equilibrium.html'},
   edge   :{t:'유한길이 단부 응력집중',      c:'empirical',r:'유한길이 롤러 실측/FEM 통상 범위 K = 2~3 (예리단부)'},
   step   :{t:'단차 충격 상한',              c:'approx',   r:'운동량–접촉강성 상한 + 감쇠 보정계수'},
   mat    :{t:'재료 물성 통상값',            c:'ref',      r:'제조사 데이터시트 통상 범위 — 실제 값으로 교체 권장'},
@@ -794,15 +842,34 @@ function loadChain(S){
   if(exd||eyd) rows.push({k:`동하중 등가편심  eₓ +${exd.toFixed(0)} / e_y +${eyd.toFixed(0)}`,
                           v:Math.hypot(exd,eyd), u:'mm', src:'rigid',
                           sub:`e_dyn = (a/g)·h_cg — 가감속·선회 하중이동은 편심과 수학적으로 동일`});
-  const fr = G.xs.map((x,i)=> 1/G.n + (G.sx>0? exq*x/G.sx:0) + (G.sy>0? eyq*G.ys[i]/G.sy:0));
-  const fracMax = Math.max(...fr), fracMin = Math.min(...fr);
-  rows.push({k:'최대 휠 분담률', v:fracMax, u:'×', src:'rigid',
-             sub:`1/${G.n} + e_x·x_i/Σx² + e_y·y_i/Σy²  (Σx²=${G.sx.toFixed(0)}, Σy²=${G.sy.toFixed(0)} mm²)`});
-  if(fracMin<0) rows.push({k:'최소 휠 분담률 — 음수, 휠 들림', v:fracMin, u:'×', bad:true});
-  rows.push({k:'바닥 평탄도 재분배 계수', v:S.k3, u:'×'});
-  const Fop = W*S.g*fracMax*S.k3;
+  const three=S.supportMode==='three';
+  const active=G.xs.map((_,i)=>i).filter(i=>!three||i!==S.liftedWheel);
+  let fr;
+  if(three){
+    // Normalize coordinates before barycentric evaluation; the rectangle's
+    // three remaining corners always form a nondegenerate triangle.
+    const [a,b,c]=active, x=G.xs.map(v=>v/S.wb), y=G.ys.map(v=>v/S.tr);
+    const px=exq/S.wb, py=eyq/S.tr;
+    const det=(y[b]-y[c])*(x[a]-x[c])+(x[c]-x[b])*(y[a]-y[c]);
+    fr=Array(G.n).fill(0);
+    fr[a]=((y[b]-y[c])*(px-x[c])+(x[c]-x[b])*(py-y[c]))/det;
+    fr[b]=((y[c]-y[a])*(px-x[c])+(x[a]-x[c])*(py-y[c]))/det;
+    fr[c]=1-fr[a]-fr[b];
+    rows.push({k:`3점 접지 · ${S.liftedWheel+1}번 비접지`,v:active.length,u:'EA',src:'three'});
+  }else fr=G.xs.map((x,i)=> 1/G.n + (G.sx>0? exq*x/G.sx:0) + (G.sy>0? eyq*G.ys[i]/G.sy:0));
+  const fracMax = Math.max(...active.map(i=>fr[i])), fracMin = Math.min(...active.map(i=>fr[i]));
+  const lift=fracMin < -1e-10, marginal=three&&!lift&&fracMin<=1e-10;
+  const source=three?'three':'rigid';
+  const expr=three?'Σr_i = 1; Σr_i·x_i = eₓ; Σr_i·y_i = e_y; 비접지 r = 0'
+    :`1/${G.n} + e_x·x_i/Σx² + e_y·y_i/Σy²  (Σx²=${G.sx.toFixed(0)}, Σy²=${G.sy.toFixed(0)} mm²)`;
+  rows.push({k:'최대 휠 분담률', v:fracMax, u:'×', src:source, sub:expr});
+  if(lift) rows.push({k:'최소 휠 분담률 — 음수, 지지 불가', v:fracMin, u:'×', bad:true});
+  const flatFactor=three?1:S.k3;
+  rows.push({k:three?'3점 정정 지지 — 평탄도 재분배 중복 적용 안 함':'바닥 평탄도 재분배 계수', v:flatFactor, u:'×'});
+  const Fop = W*S.g*fracMax*flatFactor;
   rows.push({k:'주행 하중  F_op', v:Fop, u:'N', total:true});
-  return {Fop, Fpk:Fop, rows, lift:fracMin<0, fracMax, fracMin, W, n:G.n, exq, eyq, grid:G};
+  return {Fop, Fpk:Fop, rows, lift, marginal, fracMax, fracMin, W, n:G.n, exq, eyq, grid:G,
+    fractions:fr, active, supportCount:active.length, flatFactor, source, expr};
 }
 
 /* 단차 통과 충격계수 — 운동량·접촉강성 상한에 감쇠 보정 η */
@@ -888,7 +955,7 @@ function validateState(S){
   }
   if(errs.length) return errs;
   const choices={wPre:Object.keys(WHEELS),fPre:Object.keys(FLOORS),mode:['easy','pro'],
-    tab:['chain','thermal','matrix','reverse','sources'],loadMode:['build','direct'],maneuver:['drive','spin','manual']};
+    tab:['chain','thermal','matrix','reverse','sources'],loadMode:['build','direct'],maneuver:['drive','spin','manual'],supportMode:['all','three']};
   for(const [k,vs] of Object.entries(choices)) if(!vs.includes(S[k])) errs.push(`${k}: 지원하지 않는 값입니다.`);
   const positive=['D','L','wE','wPa','wTen','fck','g','wb','tr','calF','calV','calD','calL',
     'alphaScale','rthScale','brW','brF','ttW','ttF','tbW','tbF','arW','arF','edgeDecay','impactMax','unconfWarn','unconfBad'];
@@ -903,6 +970,8 @@ function validateState(S){
   if(S.mUns===0) errs.push('mUns: 0보다 커야 합니다.');
   if(S.bareBondFactor===0) errs.push('bareBondFactor: 0보다 커야 합니다.');
   for(const k of ['nRow','nCol']) if(!Number.isInteger(S[k])||S[k]<1||S[k]>32) errs.push(`${k}: 1~32 정수여야 합니다.`);
+  if(!Number.isInteger(S.liftedWheel)||S.liftedWheel<0||S.liftedWheel>3) errs.push('비접지 바퀴는 1~4번 중 선택하십시오.');
+  if(S.loadMode==='build'&&S.supportMode==='three'&&(S.nRow!==2||S.nCol!==2)) errs.push('3점 접지는 2열 × 2행의 4바퀴 배치에서 사용할 수 있습니다.');
   if(S.wT>=S.D/2) errs.push('트레드 두께는 바퀴 반지름보다 작아야 합니다.');
   if(2*S.edgeR>=S.L) errs.push('에지 라운드의 두 배는 바퀴 폭보다 작아야 합니다.');
   if(S.hstep>=S.D/2 && S.kSauto && S.loadMode==='build' && S.v>0) errs.push('반지름 이상의 단차에는 충격 근사를 사용할 수 없습니다.');
@@ -1038,11 +1107,13 @@ function computeCore(S, opts={}){
   const G={}, bR = line?rpk.b/rpk.R:Math.max(rpk.b/rpk.Rx,rpk.a/rpk.Ry), tTb = S.wT>0 ? S.wT/rpk.b : Infinity;
   const unsupported=LC.grid && ((LC.grid.nr===1&&Math.abs(LC.exq)>1e-9)||(LC.grid.nc===1&&Math.abs(LC.eyq)>1e-9));
   G.load={stage:1,sym:'R_min',title:'하중 분배 성립 여부',v:LC.fracMin,lim:'≥ 0 · 모멘트 지지 가능',
-    s:LC.lift||unsupported?'bad':'ok',
+    s:LC.lift||unsupported?'bad':LC.marginal?'warn':'ok',
     why:LC.lift?'음의 휠 반력이 발생했습니다. 접촉 지지점을 다시 결정하는 해석이 필요하며 현재 하중을 설계에 사용할 수 없습니다.'
       :unsupported?'한 줄 지지점으로 편심 모멘트를 받을 수 없습니다. 지지 배치를 수정하십시오.'
-      :S.loadMode==='direct'?'직접 입력 — 하중 분배 검토는 입력값 산정 과정에서 별도로 확인하십시오.':'모든 휠 반력이 음수가 아니며 편심 모멘트를 지지할 배치입니다.',
-    rat:{expr:'R_i/(Wg) = 1/n + e_x x_i/Σx² + e_y y_i/Σy²',subs:`최소 분담률 = ${LC.fracMin.toFixed(6)}`,src:'rigid',
+      :LC.marginal?'합력 작용점이 지지 삼각형 경계에 있어 추가 바퀴 반력이 0입니다. 전도 여유가 없는 한계 상태입니다.'
+      :S.loadMode==='direct'?'직접 입력 — 하중 분배 검토는 입력값 산정 과정에서 별도로 확인하십시오.'
+      :S.supportMode==='three'?'선택한 비접지 바퀴를 제외한 3점의 반력이 양수이며 힘·모멘트 평형을 만족합니다.':'모든 휠 반력이 음수가 아니며 편심 모멘트를 지지할 배치입니다.',
+    rat:{expr:LC.expr||'직접 입력 F_op',subs:`최소 분담률 = ${LC.fracMin.toFixed(6)}`,src:LC.source||'rigid',
       note:'휠 들림 또는 지지 불가능한 모멘트는 종합 판정·조합 비교·개선안에 모두 불가로 반영합니다.'}};
   G.model={stage:2,sym:'모델 적용',title:'접촉·층상 모델 적용성',v:0,lim:'검증된 적용 범위',
     s:!line||rpk.overflow||rop.overflow?'bad':!bare?'warn':'ok',
@@ -1202,6 +1273,11 @@ function scaledGeom(S,k){
 function suggest(S){
   const base = compute(S);
   if(!base.ok || base.worst!=='bad') return {items:[], scale:null, none:true};
+  // None of the scanned dimensions, mass, speed or duty values can move the
+  // equivalent load point or restore a missing moment support.
+  const grid=base.LC.grid;
+  if(base.LC.lift || (grid&&((grid.nr===1&&Math.abs(base.LC.exq)>1e-9)||(grid.nc===1&&Math.abs(base.LC.eyq)>1e-9))))
+    return {items:[],scale:null,none:true};
   const items=[];
   const scan=(key, seq, label, unit, dec)=>{
     for(const v of seq){
@@ -1326,6 +1402,14 @@ const RAIL_HTML = `
     <div class="rule"></div>
     <div class="field"><label>휠 열 수 (전후)</label><div class="inp"><input type="number" id="nRow" step="1" min="1"><span class="unit">열</span></div></div>
     <div class="field"><label>휠 행 수 (좌우)</label><div class="inp"><input type="number" id="nCol" step="1" min="1"><span class="unit">행</span></div></div>
+    <label class="hint" for="supportMode">접지 조건</label>
+    <select id="supportMode"><option value="all">전체 바퀴 접지</option><option value="three">3점 접지 · 4바퀴 중 1개 비접지</option></select>
+    <div id="threeSettings" hidden>
+      <label class="hint" for="liftedWheel">바닥에 닿지 않는 바퀴</label>
+      <select id="liftedWheel"><option value="0">1번 · x− / y−</option><option value="1">2번 · x− / y+</option><option value="2">3번 · x+ / y−</option><option value="3">4번 · x+ / y+</option></select>
+      <p class="hint">2열 × 2행 전용. x는 전후, y는 좌우이며 원점은 배치 중심입니다. 3점에서는 평탄도 재분배 계수를 중복 적용하지 않습니다.</p>
+    </div>
+    <div id="supportReadout" class="support-readout" aria-live="polite"></div>
     <div class="field"><label>축거 (전후 전장)</label><div class="inp"><input type="number" id="wb" step="50"><span class="unit">mm</span></div></div>
     <div class="field"><label>윤거 (좌우 전폭)</label><div class="inp"><input type="number" id="tr" step="50"><span class="unit">mm</span></div></div>
     <div class="field"><label>무게중심 편심 eₓ</label><div class="inp"><input type="number" id="ex" step="10"><span class="unit">mm</span></div></div>
@@ -1509,10 +1593,10 @@ function renderLadder(c){
   rows.push({id:'load',stage:1,sym:'F_pk',title:'설계하중 산출',s:c.G.load.s,
     v:c.Fpk,u:'N',lim:`주행 ${fmt(c.Fop,0)} N`,
     why:`${S.loadMode==='direct'?'직접 입력 — 입력값을 주행하중으로 봅니다':`휠 ${c.LC.n}개 중 최대 분담 ${fmt(c.LC.fracMax*100,1)}%`} · 단차 충격 ×${fmt(c.kSeff,2)} 적용 후 피크 ${fmt(c.Fpk/S.g,0)} kg`,
-    rat:{expr:'R_i = W·g·[1/n + e_x·x_i/Σx² + e_y·y_i/Σy²] · k_flat     e_dyn = (a/g)·h_cg',
+    rat:{expr:S.loadMode==='direct'?'F_pk = F_direct · kS':`${c.LC.expr}; F_op = W·g·max(r_i)·${c.LC.flatFactor}; e_dyn = (a/g)·h_cg`,
          subs:c.LC.rows.map(r=>`${r.k} = ${fmt(r.v,r.u==='×'?4:1)} ${r.u}`).join('\n'),
-         src:'rigid',
-         note:'가감속·선회에 의한 하중이동은 (a/g)·h_cg 크기의 등가편심과 수학적으로 같으므로 기하편심에 합산했습니다. 원본 계산기는 휠 수와 무관하게 4점을 가정했고, 동하중을 근거 없는 배수로 곱했습니다.'}});
+         src:c.LC.source||'rigid',
+         note:'가감속 하중이동은 등가편심으로 합산합니다. 3점 지지는 힘·모멘트 평형으로 풀며 평탄도 계수를 추가 적용하지 않습니다. 단차 충격은 이후 피크 하중에 반영합니다.'}});
   c.gates.forEach(g=>rows.push({...g,id:g.id==='load'?'loadValidity':g.id}));
 
   let last=0;
@@ -2222,6 +2306,8 @@ function buildUI(){
   const fp=e=>{applyFloor(S,e.target.value); syncInputs(); render();};
   $('#wPre').onchange=wp; $('#sWPre').onchange=wp;
   $('#fPre').onchange=fp; $('#sFPre').onchange=fp;
+  $('#supportMode').onchange=e=>{S.supportMode=e.target.value;syncInputs();render();};
+  $('#liftedWheel').onchange=e=>{S.liftedWheel=Number(e.target.value);syncInputs();render();};
   const link=(a,b,key,dec)=>{[a,b].forEach(id=>{const e=$('#'+id); if(!e)return;
     e.addEventListener('input',()=>{S[key]=+e.value; syncInputs(); render();});});};
   link('Dr','sD','D'); link('Lr','sL','L');
@@ -2291,6 +2377,10 @@ function buildUI(){
 }
 
 function syncInputs(){
+  $('#supportMode').value=S.supportMode;
+  $('#liftedWheel').value=String(S.liftedWheel);
+  $('#threeSettings').hidden=S.supportMode!=='three';
+  $('#k3').disabled=S.loadMode==='build'&&S.supportMode==='three';
   NUMS.forEach(id=>{const e=$('#'+id); if(e && document.activeElement!==e) e.value=S[id];});
   CHECKS.forEach(id=>{const e=$('#'+id); if(e) e.checked=!!S[id];});
   ['Dr','sD'].forEach(i=>{const e=$('#'+i); if(e&&document.activeElement!==e)e.value=S.D;});
@@ -2415,7 +2505,7 @@ function render(){
     if(rafTween)cancelAnimationFrame(rafTween); if(rafRoll)cancelAnimationFrame(rafRoll);
     ['figSection','figPlan','figDepth','figSurf','figThermal','figReverse','figLegend','planLegend','depthLegend','surfLegend',
       'thermalLegend','revLegend','results','loadChainList','thStats','mx'].forEach(id=>$('#'+id).replaceChildren());
-    ['sF','sFsub','sWsub','sFfsub','sVsub','sMsub','figTag','planTag','rollNote','thTag','rvTag','resTag','loadTag','mxTag','hintFrac'].forEach(id=>$('#'+id).textContent='—');
+    ['sF','sFsub','sWsub','sFfsub','sVsub','sMsub','figTag','planTag','rollNote','thTag','rvTag','resTag','loadTag','mxTag','hintFrac','supportReadout'].forEach(id=>$('#'+id).textContent='—');
     if($('#btnCal'))$('#btnCal').disabled=true;
     $('#btnSvg').disabled=true; $('#btnCsv').disabled=true; $('#btnJson').disabled=true;
     $$('[data-enlarge]').forEach(b=>b.disabled=true);
@@ -2460,10 +2550,12 @@ function updateTags(c){
   const hc=$('#hintConc'); if(hc) hc.innerHTML=
     `E_c = <b>${fmt(concreteE(S),0)}</b> MPa · 지압 0.85·f_ck·√(A₂/A₁) = <b>${fmt(concreteBearing(S),1)}</b> MPa · 인장 f_ctm = <b>${fmt(concreteTens(S),2)}</b> MPa`;
   const hf=$('#hintFrac'); if(hf&&c) hf.innerHTML= c.LC.grid
-    ? `휠 ${c.LC.n}개 · 최대 분담 <b>${fmt(c.LC.fracMax*100,1)}%</b> (균등 ${fmt(100/c.LC.n,1)}%) · 최소 <b>${fmt(c.LC.fracMin*100,1)}%</b>`
+    ? `휠 ${c.LC.n}개 · 지지점 ${c.LC.supportCount}개 · 최대 분담 <b>${fmt(c.LC.fracMax*100,1)}%</b> · 최소 <b>${fmt(c.LC.fracMin*100,1)}%</b>`
     : '직접 입력 모드';
   const sf=$('#sF'); if(sf&&c){ sf.textContent=fmt(c.Fop,0);
-    $('#sFsub').innerHTML=`${fmt(c.Fop/S.g,0)} kg · 피크 <b>${fmt(c.Fpk/S.g,0)}</b> kg`; }
+    $('#sFsub').innerHTML=`${fmt(c.Fop/S.g,0)} kg · 피크 <b>${fmt(c.Fpk/S.g,0)}</b> kg${c.LC.grid?`<br>${S.nRow}열 × ${S.nCol}행 · ${c.LC.n}바퀴 / ${c.LC.supportCount}점 지지`:''}`; }
+  if(c) $('#supportReadout').innerHTML=c.LC.grid&&S.supportMode==='three'
+    ? `<b>바퀴별 반력 · 평탄도/충격 적용 전</b><div class="support-grid">${c.LC.fractions.map((r,i)=>`<span data-s="${i===S.liftedWheel?'off':r < -1e-10?'bad':'on'}">${i+1}번 · x${c.LC.grid.xs[i]<0?'−':'+'} / y${c.LC.grid.ys[i]<0?'−':'+'}<strong>${i===S.liftedWheel?'비접지':`${fmt(r*c.LC.W*S.g,0)} N`}</strong><small>${fmt(100*r,1)}%</small></span>`).join('')}</div><p class="hint">${c.LC.lift?'합력 작용점이 지지 삼각형 밖입니다. 음의 반력을 0으로 보정하지 않습니다.':c.LC.marginal?'지지 삼각형 경계 · 전도 여유 없음':'3점 지지 삼각형 내부'}</p>` : '';
   if(c){
     $('#sWsub').innerHTML=`E ${fmt(S.wE,0)} MPa → 겉보기 <b>${fmt(c.r.E1e,0)}</b> · 허용 ${fmt(c.allow.wheel,1)} MPa`;
     $('#sFfsub').innerHTML=`전달압 <b>${fmt(c.pSub,1)}</b> / 허용 ${fmt(c.allow.conc,1)} MPa`;

@@ -1,0 +1,36 @@
+const {withBrowser,preparePage,assert}=require('./browser-helper.cjs');
+withBrowser(async(browser,url)=>{
+  for(const width of [1440,430]){
+    const {page:p,errors}=await preparePage(browser,{viewport:{width,height:900}});
+    await p.goto(url);assert.equal(await p.evaluate(()=>S.nRow*S.nCol),4);
+    await p.click('[data-settings="Load"]');
+    await p.selectOption('#supportMode','three');
+    assert.equal(await p.locator('#threeSettings').isVisible(),true);
+    assert.equal(await p.locator('#k3').isDisabled(),true);
+    assert.equal(await p.locator('.support-grid>span').count(),4);
+    assert.equal(await p.evaluate(()=>C.LC.supportCount),3);
+    const force=await p.evaluate(()=>C.Fop);
+    await p.selectOption('#liftedWheel','3');
+    assert.equal(await p.evaluate(()=>C.G.load.s),'bad');
+    assert.match(await p.locator('#supportReadout').textContent(),/삼각형 밖/);
+    await p.selectOption('#liftedWheel','0');
+    assert.equal(await p.evaluate(()=>C.Fop),force);
+    const download=p.waitForEvent('download');await p.click('#btnJson');
+    const saved=await (await download).path();
+    await p.selectOption('#supportMode','all');
+    await p.setInputFiles('#fileImp',saved);await p.waitForFunction(()=>S.supportMode==='three');
+    assert.equal(await p.locator('#supportMode').inputValue(),'three');
+    assert.equal(await p.evaluate(()=>C.Fop),force);
+    if(width<=960)await p.click('[data-settings="Load"]');
+    await p.fill('#nRow','3');assert.equal(await p.evaluate(()=>!!C),false);
+    assert.equal(await p.locator('#supportReadout').textContent(),'—');
+    await p.fill('#nRow','2');assert.equal(await p.evaluate(()=>C.LC.supportCount),3);
+    await p.selectOption('#supportMode','all');assert.equal(await p.locator('#k3').isDisabled(),false);
+    await p.selectOption('#scen','park_sedan');
+    assert.equal(await p.evaluate(()=>S.nRow*S.nCol),4);
+    assert.equal(await p.evaluate(()=>S.supportMode),'all');
+    assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false);
+    assert.deepEqual(errors,[]);await p.close();
+    console.log(`PASS ${width}px three-point selection, invalid geometry, force recovery, import/export`);
+  }
+}).catch(e=>{console.error(e);process.exitCode=1;});

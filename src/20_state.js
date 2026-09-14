@@ -7,7 +7,8 @@ const DEFAULTS = {
   /* 하중 */
   loadMode:'build', Fdirect:6343.83,
   Wtare:900, Wload:1600, g:9.81,
-  nRow:4, nCol:2, wb:2600, tr:1400, ex:150, ey:50,
+  nRow:2, nCol:2, wb:2600, tr:1400, ex:150, ey:50,
+  supportMode:'all', liftedWheel:0,
   k3:1.15, ax:1.0, ay:1.0, hcg:400,
   kSauto:true, kS:1.5, hstep:3, etaImp:0.40, mUns:1.0,
   maneuver:'drive', muMan:0.15, grade:0,
@@ -38,14 +39,14 @@ const DEFAULTS = {
 };
 
 const SCENARIOS = {
-  park_sedan:{n:'주차로봇 · 승용차', d:'1.6 t 차량 + 0.9 t 대차 · 8휠 · 에폭시 라이닝',
-    p:{loadMode:'build',Wtare:900,Wload:1600,nRow:4,nCol:2,wb:2600,tr:1400,ex:150,ey:50,hcg:400,
+  park_sedan:{n:'주차로봇 · 승용차', d:'1.6 t 차량 + 0.9 t 대차 · 4휠 · 에폭시 라이닝',
+    p:{loadMode:'build',Wtare:900,Wload:1600,nRow:2,nCol:2,wb:2600,tr:1400,ex:150,ey:50,hcg:400,
        wPre:'pu95',D:200,L:80,edgeR:2,crown:0,fPre:'lin3',v:1.0,duty:.5,maneuver:'drive'}},
   park_suv:{n:'주차로봇 · SUV', d:'2.4 t 차량 + 1.1 t 대차 · 8휠 · Vulkollan급',
     p:{loadMode:'build',Wtare:1100,Wload:2400,nRow:4,nCol:2,wb:2800,tr:1500,ex:200,ey:80,hcg:450,
        wPre:'puv',D:250,L:90,edgeR:2.5,crown:0,fPre:'lin6',v:0.8,duty:.5,maneuver:'drive'}},
   spin:{n:'제자리 선회 검토', d:'승용차 조건에서 스핀 턴 — 도막 박리 지배 케이스',
-    p:{loadMode:'build',Wtare:900,Wload:1600,nRow:4,nCol:2,wb:2600,tr:1400,ex:150,ey:50,hcg:400,
+    p:{loadMode:'build',Wtare:900,Wload:1600,nRow:2,nCol:2,wb:2600,tr:1400,ex:150,ey:50,hcg:400,
        wPre:'pu95',D:200,L:80,edgeR:2,crown:0,fPre:'coat',v:0.3,duty:.2,maneuver:'spin',ax:0}},
   agv:{n:'소형 물류 AGV', d:'1 t급 · 4휠 · 박막 에폭시 코팅',
     p:{loadMode:'build',Wtare:300,Wload:1000,nRow:2,nCol:2,wb:900,tr:700,ex:60,ey:40,hcg:300,

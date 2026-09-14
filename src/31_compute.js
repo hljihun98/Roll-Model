@@ -108,11 +108,13 @@ function computeCore(S, opts={}){
   const G={}, bR = line?rpk.b/rpk.R:Math.max(rpk.b/rpk.Rx,rpk.a/rpk.Ry), tTb = S.wT>0 ? S.wT/rpk.b : Infinity;
   const unsupported=LC.grid && ((LC.grid.nr===1&&Math.abs(LC.exq)>1e-9)||(LC.grid.nc===1&&Math.abs(LC.eyq)>1e-9));
   G.load={stage:1,sym:'R_min',title:'하중 분배 성립 여부',v:LC.fracMin,lim:'≥ 0 · 모멘트 지지 가능',
-    s:LC.lift||unsupported?'bad':'ok',
+    s:LC.lift||unsupported?'bad':LC.marginal?'warn':'ok',
     why:LC.lift?'음의 휠 반력이 발생했습니다. 접촉 지지점을 다시 결정하는 해석이 필요하며 현재 하중을 설계에 사용할 수 없습니다.'
       :unsupported?'한 줄 지지점으로 편심 모멘트를 받을 수 없습니다. 지지 배치를 수정하십시오.'
-      :S.loadMode==='direct'?'직접 입력 — 하중 분배 검토는 입력값 산정 과정에서 별도로 확인하십시오.':'모든 휠 반력이 음수가 아니며 편심 모멘트를 지지할 배치입니다.',
-    rat:{expr:'R_i/(Wg) = 1/n + e_x x_i/Σx² + e_y y_i/Σy²',subs:`최소 분담률 = ${LC.fracMin.toFixed(6)}`,src:'rigid',
+      :LC.marginal?'합력 작용점이 지지 삼각형 경계에 있어 추가 바퀴 반력이 0입니다. 전도 여유가 없는 한계 상태입니다.'
+      :S.loadMode==='direct'?'직접 입력 — 하중 분배 검토는 입력값 산정 과정에서 별도로 확인하십시오.'
+      :S.supportMode==='three'?'선택한 비접지 바퀴를 제외한 3점의 반력이 양수이며 힘·모멘트 평형을 만족합니다.':'모든 휠 반력이 음수가 아니며 편심 모멘트를 지지할 배치입니다.',
+    rat:{expr:LC.expr||'직접 입력 F_op',subs:`최소 분담률 = ${LC.fracMin.toFixed(6)}`,src:LC.source||'rigid',
       note:'휠 들림 또는 지지 불가능한 모멘트는 종합 판정·조합 비교·개선안에 모두 불가로 반영합니다.'}};
   G.model={stage:2,sym:'모델 적용',title:'접촉·층상 모델 적용성',v:0,lim:'검증된 적용 범위',
     s:!line||rpk.overflow||rop.overflow?'bad':!bare?'warn':'ok',
@@ -272,6 +274,11 @@ function scaledGeom(S,k){
 function suggest(S){
   const base = compute(S);
   if(!base.ok || base.worst!=='bad') return {items:[], scale:null, none:true};
+  // None of the scanned dimensions, mass, speed or duty values can move the
+  // equivalent load point or restore a missing moment support.
+  const grid=base.LC.grid;
+  if(base.LC.lift || (grid&&((grid.nr===1&&Math.abs(base.LC.exq)>1e-9)||(grid.nc===1&&Math.abs(base.LC.eyq)>1e-9))))
+    return {items:[],scale:null,none:true};
   const items=[];
   const scan=(key, seq, label, unit, dec)=>{
     for(const v of seq){
